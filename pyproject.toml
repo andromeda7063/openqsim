@@ -1,0 +1,12 @@
+[tool.uv.workspace]
+members = ["libqsim", "qsim-gui"]
+
+[dependency-groups]
+dev = ["pytest", "ruff"]
+
+[tool.pytest.ini_options]
+testpaths = ["libqsim/tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"

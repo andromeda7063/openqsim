@@ -1,0 +1,18 @@
+[project]
+name = "libqsim"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "andromeda7063", email = "abhinavsriram7063@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "numpy>=2.5.3",
+    "qiskit>=2.5.2",
+    "qiskit-aer>=0.17.2",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.15,<0.10.0"]
+build-backend = "uv_build"
