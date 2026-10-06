@@ -1,6 +1,12 @@
 """Command actions and shortcut bindings for the GUI."""
 
-from libqsim.application.operations import clear, delete_gates
+from libqsim.application.operations import (
+    Clipboard,
+    clear,
+    copy_gates,
+    delete_gates,
+    paste,
+)
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QWidget
 
@@ -23,6 +29,7 @@ class CommandActions:
         self._adapter = adapter
         self._ui = ui
         self._selection_controller: SelectionController | None = None
+        self._clipboard: Clipboard | None = None
 
         # File actions
         self.action_new = QAction("New", parent)
@@ -65,10 +72,12 @@ class CommandActions:
         self.action_copy = QAction("Copy", parent)
         self.action_copy.setShortcut(QKeySequence("Ctrl+C"))
         self.action_copy.setEnabled(False)
+        self.action_copy.triggered.connect(self._handle_copy)
 
         self.action_paste = QAction("Paste", parent)
         self.action_paste.setShortcut(QKeySequence("Ctrl+V"))
         self.action_paste.setEnabled(False)
+        self.action_paste.triggered.connect(self._handle_paste)
 
         self.action_delete = QAction("Delete", parent)
         self.action_delete.setShortcuts([QKeySequence("Delete"), QKeySequence("Backspace")])
@@ -101,6 +110,11 @@ class CommandActions:
         else:
             self.update_actions()
 
+    @property
+    def clipboard(self) -> Clipboard | None:
+        """The current in-app clipboard object."""
+        return self._clipboard
+
     def set_selection_controller(self, controller: SelectionController) -> None:
         """Bind a selection controller and listen to selection changes."""
         self._selection_controller = controller
@@ -121,12 +135,46 @@ class CommandActions:
             self._selection_controller is not None and len(self._selection_controller.selection) > 0
         )
         self.action_delete.setEnabled(has_selection)
+        self.action_copy.setEnabled(has_selection)
+
+        has_clipboard = self._clipboard is not None and len(self._clipboard.placements) > 0
+        self.action_paste.setEnabled(has_clipboard)
 
         can_change_target = (
             self._selection_controller is not None
             and self._selection_controller.can_change_target()
         )
         self.action_change_target.setEnabled(can_change_target)
+
+    def _handle_copy(self) -> None:
+        if self._selection_controller is None or not self._selection_controller.selection:
+            return
+        clip = copy_gates(self._adapter.circuit, self._selection_controller.selection)
+        if clip is not None:
+            self._clipboard = clip
+            self.update_actions()
+
+    def _handle_paste(self) -> None:
+        if self._clipboard is None or not self._clipboard.placements:
+            return
+        anchor = (
+            self._selection_controller.last_clicked_cell
+            if (
+                self._selection_controller
+                and self._selection_controller.last_clicked_cell is not None
+            )
+            else (0, 0)
+        )
+        res = paste(
+            self._adapter.circuit,
+            self._clipboard,
+            anchor_qubit=anchor[0],
+            anchor_column=anchor[1],
+        )
+        if res.status == "applied":
+            self._adapter.apply(res)
+        elif res.status == "rejected":
+            self._ui.show_error("Paste Error", "\n".join(res.messages))
 
     def _handle_undo(self) -> None:
         self._adapter.undo()

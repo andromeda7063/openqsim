@@ -150,6 +150,9 @@ class SelectionController:
             self._selection = new_sel
             self._notify()
 
+    def click_empty(self, cell: tuple[int, int], ctrl: bool = False) -> None:
+        self.press_empty(cell, ctrl=ctrl)
+
     def marquee_begin(self, cell: tuple[int, int], ctrl: bool = False) -> None:
         self._last_clicked_cell = cell
         self._marquee_start = cell

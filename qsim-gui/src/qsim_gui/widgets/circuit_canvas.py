@@ -281,6 +281,22 @@ class CircuitCanvas(QWidget):
             self._controller.select_all(self._adapter.circuit)
             event.accept()
             return
+        if event.key() == Qt.Key.Key_C and bool(
+            event.modifiers()
+            & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier)
+        ):
+            if self._commands is not None:
+                self._commands.action_copy.trigger()
+            event.accept()
+            return
+        if event.key() == Qt.Key.Key_V and bool(
+            event.modifiers()
+            & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier)
+        ):
+            if self._commands is not None:
+                self._commands.action_paste.trigger()
+            event.accept()
+            return
 
         d_q, d_c = 0, 0
         if event.key() == Qt.Key.Key_Left:

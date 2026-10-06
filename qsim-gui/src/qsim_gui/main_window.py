@@ -1,5 +1,6 @@
 """Main window of the OpenQSim application."""
 
+from libqsim.application.operations import plan_resize, resize
 from libqsim.application.session import EditorSession, SaveStatus, SimulationStatus
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -7,6 +8,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMenu,
     QScrollArea,
+    QSpinBox,
     QStatusBar,
     QToolBar,
     QWidget,
@@ -94,6 +96,9 @@ class MainWindow(QMainWindow):
         edit_menu.addAction(self._commands.action_paste)
         edit_menu.addAction(self._commands.action_delete)
         edit_menu.addAction(self._commands.action_select_all)
+        edit_menu.addAction(self._commands.action_clear)
+        edit_menu.addSeparator()
+        edit_menu.addAction(self._commands.action_change_target)
 
         # Simulate menu
         simulate_menu = menubar.addMenu("&Simulate")
@@ -119,6 +124,15 @@ class MainWindow(QMainWindow):
         toolbar.addSeparator()
         toolbar.addAction(self._commands.action_export_qasm)
         toolbar.addAction(self._commands.action_export_image)
+        toolbar.addSeparator()
+
+        toolbar.addWidget(QLabel(" Qubits: "))
+        self._qubit_spin = QSpinBox(self)
+        self._qubit_spin.setObjectName("qubit_spin_box")
+        self._qubit_spin.setRange(1, 10)
+        self._qubit_spin.setValue(self._adapter.circuit.num_qubits)
+        self._qubit_spin.valueChanged.connect(self._on_qubit_count_changed)
+        toolbar.addWidget(self._qubit_spin)
 
     def _setup_central_regions(self) -> None:
         central_widget = QWidget(self)
@@ -133,8 +147,14 @@ class MainWindow(QMainWindow):
         self._palette = GatePalette(parent=self)
         self._palette.setObjectName("palette_region")
 
-        self._canvas = CircuitCanvas(adapter=self._adapter, ui=self._ui, parent=self)
+        self._canvas = CircuitCanvas(
+            adapter=self._adapter,
+            ui=self._ui,
+            commands=self._commands,
+            parent=self,
+        )
         self._canvas.setObjectName("circuit_canvas")
+        self._commands.set_selection_controller(self._canvas.selection_controller)
 
         self._canvas_scroll = QScrollArea(self)
         self._canvas_scroll.setObjectName("canvas_region")
@@ -162,7 +182,46 @@ class MainWindow(QMainWindow):
         status_bar.addPermanentWidget(self._save_status_label)
         status_bar.addPermanentWidget(self._sim_status_label)
 
+    def _on_qubit_count_changed(self, n: int) -> None:
+        curr_n = self._adapter.circuit.num_qubits
+        if n == curr_n:
+            return
+        if n > curr_n:
+            res = resize(self._adapter.circuit, n)
+            if res.status == "applied":
+                self._adapter.apply(res)
+            elif res.status == "rejected":
+                self._ui.show_error("Resize Error", "\n".join(res.messages))
+                self._sync_qubit_spin()
+        else:  # n < curr_n
+            plan = plan_resize(self._adapter.circuit, n)
+            if plan.needs_confirmation:
+                msg = (
+                    f"Decreasing the qubit count to {n} will delete "
+                    f"{len(plan.affected)} affected gate(s). Proceed?"
+                )
+                confirmed = self._ui.confirm("Confirm Resize", msg)
+                if not confirmed:
+                    self._sync_qubit_spin()
+                    return
+                res = resize(self._adapter.circuit, n, confirmed=True)
+            else:
+                res = resize(self._adapter.circuit, n)
+            if res.status == "applied":
+                self._adapter.apply(res)
+            elif res.status == "rejected":
+                self._ui.show_error("Resize Error", "\n".join(res.messages))
+                self._sync_qubit_spin()
+
+    def _sync_qubit_spin(self) -> None:
+        if hasattr(self, "_qubit_spin"):
+            self._qubit_spin.blockSignals(True)
+            self._qubit_spin.setValue(self._adapter.circuit.num_qubits)
+            self._qubit_spin.blockSignals(False)
+
     def _on_session_changed(self) -> None:
+        self._sync_qubit_spin()
+
         # Window title
         file_name = (
             self._adapter.file_path.name if self._adapter.file_path is not None else "Untitled"
