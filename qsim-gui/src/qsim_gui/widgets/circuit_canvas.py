@@ -1,12 +1,25 @@
-"""Scrollable read-only circuit canvas widget."""
+"""Scrollable read-only circuit canvas widget with drag-and-drop placement."""
 
-from libqsim.application.operations import OperationResult
+from libqsim.application.operations import OperationResult, place_gate
 from libqsim.application.session import EditorSession
 from libqsim.domain.models import GateType
-from PySide6.QtCore import QPointF, QRectF, QSize, Qt
-from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPalette, QPen
+from PySide6.QtCore import QMimeData, QPoint, QPointF, QRectF, QSize, Qt
+from PySide6.QtGui import (
+    QColor,
+    QDragEnterEvent,
+    QDragLeaveEvent,
+    QDragMoveEvent,
+    QDropEvent,
+    QFont,
+    QPainter,
+    QPainterPath,
+    QPalette,
+    QPen,
+)
 from PySide6.QtWidgets import QWidget
+from qsim_gui.dialogs import UserInterface
 from qsim_gui.state import SessionAdapter
+from qsim_gui.widgets.gate_palette import decode_gate_mime
 from qsim_gui.widgets.grid import GridGeometry
 
 
@@ -15,16 +28,22 @@ def handle_drop(
     gate_type: GateType | str,
     cell: tuple[int, int],
 ) -> OperationResult:
-    raise NotImplementedError
+    """Pure placement helper for drop events: validates and commits on applied."""
+    qubit, column = cell
+    res = place_gate(session.circuit, gate_type, qubit=qubit, column=column)
+    if res.status == "applied":
+        session.apply(res)
+    return res
 
 
 class CircuitCanvas(QWidget):
-    """Widget rendering quantum circuit with QPainter."""
+    """Widget rendering quantum circuit with QPainter and supporting gate drops."""
 
     def __init__(
         self,
         adapter: SessionAdapter,
         geometry: GridGeometry | None = None,
+        ui: UserInterface | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -32,6 +51,9 @@ class CircuitCanvas(QWidget):
         self._geo = (
             geometry if geometry is not None else GridGeometry(cell_width=48, cell_height=48)
         )
+        self._ui = ui
+        self._drag_cells: list[tuple[int, int]] = []
+        self.setAcceptDrops(True)
 
         self._update_dimensions()
         self._adapter.changed.connect(self._on_session_changed)
@@ -54,6 +76,68 @@ class CircuitCanvas(QWidget):
     def _on_session_changed(self) -> None:
         self._update_dimensions()
         self.update()
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        if decode_gate_mime(event.mimeData()) is not None:
+            event.acceptProposedAction()
+            self._update_drag_highlight(event.position().toPoint(), event.mimeData())
+
+    def dragMoveEvent(self, event: QDragMoveEvent) -> None:
+        if decode_gate_mime(event.mimeData()) is not None:
+            event.acceptProposedAction()
+            self._update_drag_highlight(event.position().toPoint(), event.mimeData())
+
+    def dragLeaveEvent(self, event: QDragLeaveEvent) -> None:
+        if self._drag_cells:
+            self._drag_cells = []
+            self.update()
+        event.accept()
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        if self._drag_cells:
+            self._drag_cells = []
+            self.update()
+
+        gate_type = decode_gate_mime(event.mimeData())
+        if gate_type is None:
+            event.ignore()
+            return
+
+        pt = event.position().toPoint()
+        cell = self._geo.point_to_cell(
+            pt.x(), pt.y(), num_qubits=self._adapter.circuit.num_qubits, num_columns=50
+        )
+        if cell is None:
+            event.ignore()
+            return
+
+        res = handle_drop(self._adapter.session, gate_type, cell)
+        if res.status == "rejected" and self._ui is not None:
+            self._ui.show_error("Placement Error", "\n".join(res.messages))
+        event.acceptProposedAction()
+
+    def _update_drag_highlight(self, pt: QPoint, mime_data: QMimeData) -> None:
+        cell = self._geo.point_to_cell(
+            pt.x(), pt.y(), num_qubits=self._adapter.circuit.num_qubits, num_columns=50
+        )
+        if cell is None:
+            if self._drag_cells:
+                self._drag_cells = []
+                self.update()
+            return
+
+        gate_type = decode_gate_mime(mime_data)
+        q, c = cell
+        if gate_type == GateType.CNOT:
+            cells = [(q, c), (q + 1, c)]
+        elif gate_type == GateType.Toffoli:
+            cells = [(q, c), (q + 1, c), (q + 2, c)]
+        else:
+            cells = [(q, c)]
+
+        if self._drag_cells != cells:
+            self._drag_cells = cells
+            self.update()
 
     def paintEvent(self, event) -> None:  # type: ignore[no-untyped-def]
         painter = QPainter(self)
@@ -122,6 +206,18 @@ class CircuitCanvas(QWidget):
             # Horizontal wire line
             painter.setPen(wire_pen)
             painter.drawLine(margins.left, cy, x_last, cy)
+
+        # Draw drag hover highlights
+        if self._drag_cells:
+            highlight_color = pal.color(QPalette.ColorRole.Highlight)
+            fill_color = QColor(highlight_color)
+            fill_color.setAlpha(80)
+            painter.setPen(QPen(highlight_color, 2.0, Qt.PenStyle.DashLine))
+            painter.setBrush(fill_color)
+            for q_cell, c_cell in self._drag_cells:
+                if 0 <= q_cell < num_qubits and 0 <= c_cell < 50:
+                    hx, hy, hw, hh = self._geo.cell_to_rect(q_cell, c_cell)
+                    painter.drawRoundedRect(QRectF(hx + 2, hy + 2, hw - 4, hh - 4), 4, 4)
 
         # 3. Draw gate placements
         circuit = self._adapter.circuit

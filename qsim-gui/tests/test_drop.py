@@ -31,9 +31,9 @@ def test_handle_drop_places_each_gate_type() -> None:
         session = EditorSession()
         # Ensure enough qubits for Toffoli (needs 3 qubits: 0, 1, 2)
         if gate_type == GateType.Toffoli:
-            from libqsim.application.operations import resize_circuit
+            from libqsim.application.operations import resize
 
-            session.apply(resize_circuit(session.circuit, 3))
+            session.apply(resize(session.circuit, 3))
 
         res = handle_drop(session, gate_type, cell=(0, idx))
         assert res.status == "applied"
