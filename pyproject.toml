@@ -11,6 +11,10 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["libqsim/tests"]
+markers = [
+    "req(*ids): requirement IDs covered by the test",
+    "perf: performance tests",
+]
 
 [tool.ruff]
 line-length = 100
