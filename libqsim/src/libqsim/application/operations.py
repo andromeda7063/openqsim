@@ -9,11 +9,15 @@ from libqsim.domain.models import Circuit, GatePlacement
 from libqsim.domain.validation import validate
 
 __all__ = [
+    "Clipboard",
     "OperationResult",
     "ResizePlan",
     "change_target",
     "clear",
+    "copy_gates",
     "delete_gates",
+    "move_gates",
+    "paste",
     "place_gate",
     "plan_resize",
     "resize",
@@ -325,3 +329,38 @@ def resize(
         messages=(),
         touched=(),
     )
+
+
+@dataclass(frozen=True)
+class Clipboard:
+    """An immutable container of copied gate placements relative to anchor (0, 0)."""
+
+    placements: tuple[GatePlacement, ...]
+
+
+def move_gates(
+    circuit: Circuit,
+    selection: frozenset[GatePlacement] | Iterable[GatePlacement],
+    d_qubit: int,
+    d_column: int,
+) -> OperationResult:
+    """Translate every gate in the selection together by d_qubit and d_column."""
+    raise NotImplementedError
+
+
+def copy_gates(
+    circuit: Circuit,
+    selection: frozenset[GatePlacement] | Iterable[GatePlacement],
+) -> Clipboard | None:
+    """Copy the selected circuit placements relative to their top-left anchor."""
+    raise NotImplementedError
+
+
+def paste(
+    circuit: Circuit,
+    clipboard: Clipboard | None,
+    anchor_qubit: int,
+    anchor_column: int,
+) -> OperationResult:
+    """Paste the clipboard contents anchoring at (anchor_qubit, anchor_column)."""
+    raise NotImplementedError
