@@ -1,3 +1,23 @@
-"""Application layer for OpenQSim: headless session and history."""
+"""Application layer for OpenQSim: headless session, history, and editing operations."""
 
-__all__: list[str] = []
+from libqsim.application.operations import (
+    OperationResult,
+    ResizePlan,
+    change_target,
+    clear,
+    delete_gates,
+    place_gate,
+    plan_resize,
+    resize,
+)
+
+__all__ = [
+    "OperationResult",
+    "ResizePlan",
+    "change_target",
+    "clear",
+    "delete_gates",
+    "place_gate",
+    "plan_resize",
+    "resize",
+]
