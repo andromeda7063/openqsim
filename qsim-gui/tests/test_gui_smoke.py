@@ -7,7 +7,7 @@ import pytest
 from libqsim.application.operations import place_gate
 from libqsim.application.session import EditorSession, SimulationStatus
 from libqsim.domain.models import GateType
-from PySide6.QtWidgets import QApplication, QLabel
+from PySide6.QtWidgets import QApplication, QLabel, QWidget
 from qsim_gui.dialogs import StubUserInterface
 from qsim_gui.main_window import MainWindow
 from qsim_gui.state import SessionAdapter
@@ -32,17 +32,14 @@ def test_main_window_construction_and_regions(qapp: QApplication) -> None:
     assert window.windowTitle() == "Untitled [*] - OpenQSim"
     assert window.isWindowModified() is False
 
-    # Check 3 placeholder regions exist in central widget
-    palette_region = window.findChild(QLabel, "palette_region")
-    canvas_region = window.findChild(QLabel, "canvas_region")
-    results_region = window.findChild(QLabel, "results_region")
+    # Check 3 regions exist in central widget
+    palette_region = window.findChild(QWidget, "palette_region")
+    canvas_region = window.findChild(QWidget, "canvas_region")
+    results_region = window.findChild(QWidget, "results_region")
 
     assert palette_region is not None
     assert canvas_region is not None
     assert results_region is not None
-    assert palette_region.text() == "Palette"
-    assert canvas_region.text() == "Canvas"
-    assert results_region.text() == "Results"
 
 
 @pytest.mark.req("FR-3.8")

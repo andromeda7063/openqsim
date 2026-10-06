@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QMenu,
+    QScrollArea,
     QStatusBar,
     QToolBar,
     QWidget,
@@ -15,6 +16,7 @@ from PySide6.QtWidgets import (
 from qsim_gui.commands import CommandActions
 from qsim_gui.dialogs import QtUserInterface, UserInterface
 from qsim_gui.state import SessionAdapter
+from qsim_gui.widgets.circuit_canvas import CircuitCanvas
 
 
 class MainWindow(QMainWindow):
@@ -48,6 +50,10 @@ class MainWindow(QMainWindow):
     @property
     def ui(self) -> UserInterface:
         return self._ui
+
+    @property
+    def canvas(self) -> CircuitCanvas:
+        return self._canvas
 
     def _setup_ui(self) -> None:
         self._setup_menus()
@@ -114,21 +120,25 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(6)
 
-        # Three regions as labelled placeholders
+        # Three regions: palette placeholder, scrollable canvas, results placeholder
         self._palette_placeholder = QLabel("Palette", self)
         self._palette_placeholder.setObjectName("palette_region")
         self._palette_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self._canvas_placeholder = QLabel("Canvas", self)
-        self._canvas_placeholder.setObjectName("canvas_region")
-        self._canvas_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._canvas = CircuitCanvas(adapter=self._adapter, parent=self)
+        self._canvas.setObjectName("circuit_canvas")
+
+        self._canvas_scroll = QScrollArea(self)
+        self._canvas_scroll.setObjectName("canvas_region")
+        self._canvas_scroll.setWidget(self._canvas)
+        self._canvas_scroll.setWidgetResizable(False)
 
         self._results_placeholder = QLabel("Results", self)
         self._results_placeholder.setObjectName("results_region")
         self._results_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         layout.addWidget(self._palette_placeholder, 1)
-        layout.addWidget(self._canvas_placeholder, 4)
+        layout.addWidget(self._canvas_scroll, 4)
         layout.addWidget(self._results_placeholder, 3)
 
     def _setup_status_bar(self) -> None:
