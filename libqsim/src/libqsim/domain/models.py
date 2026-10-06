@@ -9,11 +9,7 @@ from libqsim.domain.gates import GateType
 def _placement_sort_key(
     p: "GatePlacement",
 ) -> tuple[int, int | float, str, tuple[int, ...], tuple[int, ...]]:
-    lowest = (
-        p.lowest_occupied_qubit
-        if p.lowest_occupied_qubit is not None
-        else -float("inf")
-    )
+    lowest = p.lowest_occupied_qubit if p.lowest_occupied_qubit is not None else -float("inf")
     gt_val = p.gate_type.value if hasattr(p.gate_type, "value") else str(p.gate_type)
     return (p.column, lowest, gt_val, p.targets, p.controls)
 
