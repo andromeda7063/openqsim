@@ -306,6 +306,25 @@ Use one standard user-facing error mechanism. Never expose raw Python
 exceptions, Qiskit stack traces, or parser stack traces. Failed operations
 preserve existing state unless a destructive mutation was explicitly confirmed.
 
+## Required checks (before every commit)
+
+CI fails on unformatted code, so format first, then verify. Run in this order
+and report real output:
+
+```fish
+uv run ruff format .            # applies formatting; never skip
+uv run ruff check . --fix       # applies safe lint fixes
+uv run ruff format --check .    # must report nothing would change
+uv run ruff check .             # must pass
+uv run mypy libqsim
+uv run pytest
+QT_QPA_PLATFORM=offscreen uv run pytest qsim-gui/tests
+```
+
+- Never commit unformatted code; include any files ruff reformats in the same
+  commit.
+- Do not change ruff configuration or add ignores to make checks pass.
+
 ## Testing
 
 - Prefer non-GUI tests for domain, validation, session, simulation, QCS, and
