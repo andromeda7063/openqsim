@@ -242,6 +242,14 @@ class EditorSession:
         self.establish_loaded(loaded_circuit, target_path)
         return IoOutcome(ok=True)
 
+    def import_qasm(self, path: Path | str) -> IoOutcome:
+        """Import an OpenQASM 2.0 file into the session."""
+        raise NotImplementedError
+
+    def export_qasm(self, path: Path | str) -> IoOutcome:
+        """Export the current circuit as OpenQASM 2.0 to a file."""
+        raise NotImplementedError
+
     def subscribe(self, callback: Callable[[], None]) -> Callable[[], None]:
         """Subscribe to session state changes. Returns an unsubscribe callable."""
         self._subscribers.append(callback)
