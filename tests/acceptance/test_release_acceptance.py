@@ -558,7 +558,9 @@ def test_performance_nfr_1_2_max_circuit_editing() -> None:
 # ==============================================================================
 
 
-@pytest.mark.req("NFR-4.1", "NFR-4.2", "NFR-4.3", "FR-3.11", "NFR-2.1")
+@pytest.mark.req(
+    "NFR-4.1", "NFR-4.2", "NFR-4.3", "FR-3.11", "NFR-2.1", "FR-1.44", "NFR-6.1", "NFR-6.3"
+)
 def test_offline_headless_and_gui_smoke_no_network(
     monkeypatch: pytest.MonkeyPatch, qapp: QApplication, tmp_path: Path
 ) -> None:
