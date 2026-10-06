@@ -345,7 +345,58 @@ def move_gates(
     d_column: int,
 ) -> OperationResult:
     """Translate every gate in the selection together by d_qubit and d_column."""
-    raise NotImplementedError
+    sel_set = frozenset(selection)
+    if not sel_set.issubset(circuit.placements):
+        raise ValueError("Selection contains placements not present in circuit.")
+
+    if not sel_set or (d_qubit == 0 and d_column == 0):
+        return OperationResult(
+            status="noop",
+            circuit=circuit,
+            messages=(),
+            touched=(),
+        )
+
+    unselected = tuple(p for p in circuit.placements if p not in sel_set)
+    moved: list[GatePlacement] = []
+    for p in circuit.placements:
+        if p in sel_set:
+            new_targets = tuple(t + d_qubit for t in p.targets)
+            new_controls = tuple(c + d_qubit for c in p.controls)
+            new_column = p.column + d_column
+            moved.append(
+                GatePlacement(
+                    gate_type=p.gate_type,
+                    targets=new_targets,
+                    controls=new_controls,
+                    column=new_column,
+                )
+            )
+
+    candidate = circuit.with_placements((*unselected, *moved))
+    if candidate == circuit:
+        return OperationResult(
+            status="noop",
+            circuit=circuit,
+            messages=(),
+            touched=(),
+        )
+
+    errors = validate(candidate)
+    if errors:
+        return OperationResult(
+            status="rejected",
+            circuit=circuit,
+            messages=tuple(e.message for e in errors),
+            touched=(),
+        )
+
+    return OperationResult(
+        status="applied",
+        circuit=candidate,
+        messages=(),
+        touched=tuple(moved),
+    )
 
 
 def copy_gates(
@@ -353,7 +404,32 @@ def copy_gates(
     selection: frozenset[GatePlacement] | Iterable[GatePlacement],
 ) -> Clipboard | None:
     """Copy the selected circuit placements relative to their top-left anchor."""
-    raise NotImplementedError
+    sel_set = frozenset(selection)
+    if not sel_set:
+        return None
+
+    if not sel_set.issubset(circuit.placements):
+        raise ValueError("Selection contains placements not present in circuit.")
+
+    min_q = min(min(p.occupied_qubits) for p in sel_set)
+    min_col = min(p.column for p in sel_set)
+
+    sel_placements = tuple(p for p in circuit.canonical_placements() if p in sel_set)
+    rel_placements: list[GatePlacement] = []
+    for p in sel_placements:
+        rel_targets = tuple(t - min_q for t in p.targets)
+        rel_controls = tuple(c - min_q for c in p.controls)
+        rel_col = p.column - min_col
+        rel_placements.append(
+            GatePlacement(
+                gate_type=p.gate_type,
+                targets=rel_targets,
+                controls=rel_controls,
+                column=rel_col,
+            )
+        )
+
+    return Clipboard(placements=tuple(rel_placements))
 
 
 def paste(
@@ -363,4 +439,49 @@ def paste(
     anchor_column: int,
 ) -> OperationResult:
     """Paste the clipboard contents anchoring at (anchor_qubit, anchor_column)."""
-    raise NotImplementedError
+    if clipboard is None or not clipboard.placements:
+        return OperationResult(
+            status="noop",
+            circuit=circuit,
+            messages=(),
+            touched=(),
+        )
+
+    pasted: list[GatePlacement] = []
+    for p in clipboard.placements:
+        dest_targets = tuple(t + anchor_qubit for t in p.targets)
+        dest_controls = tuple(c + anchor_qubit for c in p.controls)
+        dest_col = p.column + anchor_column
+        pasted.append(
+            GatePlacement(
+                gate_type=p.gate_type,
+                targets=dest_targets,
+                controls=dest_controls,
+                column=dest_col,
+            )
+        )
+
+    candidate = circuit.with_placements((*circuit.placements, *pasted))
+    if candidate == circuit:
+        return OperationResult(
+            status="noop",
+            circuit=circuit,
+            messages=(),
+            touched=(),
+        )
+
+    errors = validate(candidate)
+    if errors:
+        return OperationResult(
+            status="rejected",
+            circuit=circuit,
+            messages=tuple(e.message for e in errors),
+            touched=(),
+        )
+
+    return OperationResult(
+        status="applied",
+        circuit=candidate,
+        messages=(),
+        touched=tuple(pasted),
+    )
