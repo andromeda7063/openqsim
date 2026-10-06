@@ -6,7 +6,7 @@ from libqsim.application.guarded import run_guarded
 from libqsim.application.operations import plan_resize, resize
 from libqsim.application.session import EditorSession, SaveStatus, SimulationStatus
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QCloseEvent, QImage
+from PySide6.QtGui import QAction, QCloseEvent, QImage
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 
 from qsim_gui.commands import CommandActions
 from qsim_gui.dialogs import QtUserInterface, UserInterface
+from qsim_gui.help import HelpWindow, open_help_window
 from qsim_gui.state import SessionAdapter
 from qsim_gui.widgets.circuit_canvas import CircuitCanvas
 from qsim_gui.widgets.gate_palette import GatePalette
@@ -41,6 +42,7 @@ class MainWindow(QMainWindow):
             adapter = SessionAdapter(EditorSession())
         self._adapter = adapter
         self._ui = ui if ui is not None else QtUserInterface(self)
+        self._help_windows: list[HelpWindow] = []
         self._commands = CommandActions(self, self._adapter, self._ui)
         self._commands.on_export_circuit_image = self.export_circuit_image
         self._commands.on_export_bloch_image = self.export_bloch_image
@@ -74,6 +76,15 @@ class MainWindow(QMainWindow):
     @property
     def results_panel(self) -> ResultsPanel:
         return self._results_panel
+
+    @property
+    def help_windows(self) -> list[HelpWindow]:
+        return self._help_windows
+
+    def _open_help(self, doc_key: str, title: str) -> HelpWindow:
+        win = open_help_window(doc_key, title, parent=self)
+        self._help_windows.append(win)
+        return win
 
     def _setup_ui(self) -> None:
         self._setup_menus()
@@ -119,8 +130,29 @@ class MainWindow(QMainWindow):
         simulate_menu = menubar.addMenu("&Simulate")
         simulate_menu.addAction(self._commands.action_run)
 
-        # Help menu placeholder
+        # Help menu
         self._help_menu: QMenu = menubar.addMenu("&Help")
+        self.action_help_quick_start = QAction("Quick Start", self)
+        self.action_help_quick_start.triggered.connect(
+            lambda: self._open_help("quick-start", "Quick Start")
+        )
+        self._help_menu.addAction(self.action_help_quick_start)
+
+        self.action_help_qcs = QAction("QCS Format", self)
+        self.action_help_qcs.triggered.connect(lambda: self._open_help("qcs-format", "QCS Format"))
+        self._help_menu.addAction(self.action_help_qcs)
+
+        self.action_help_qasm = QAction("OpenQASM Support", self)
+        self.action_help_qasm.triggered.connect(
+            lambda: self._open_help("qasm-support", "OpenQASM Support")
+        )
+        self._help_menu.addAction(self.action_help_qasm)
+
+        self._help_menu.addSeparator()
+
+        self.action_help_about = QAction("About OpenQSim", self)
+        self.action_help_about.triggered.connect(lambda: self._open_help("about", "About OpenQSim"))
+        self._help_menu.addAction(self.action_help_about)
 
     def _setup_toolbar(self) -> None:
         toolbar = QToolBar("Main Toolbar", self)

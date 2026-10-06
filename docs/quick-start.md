@@ -29,7 +29,7 @@ For a CNOT:
 - one occupied wire is the control and the other is the target;
 - a newly placed CNOT puts the control on the wire where you drop it and the
   target on the wire below;
-- use **Change target** on a selected CNOT to swap control and target.
+- use **Change Target** on a selected CNOT to swap control and target.
 
 Dropping the CNOT on qubit 0 gives control = q0 and target = q1, matching the
 OpenQASM statement `cx q[0],q[1];`. Because the H gate acts on the control, the
