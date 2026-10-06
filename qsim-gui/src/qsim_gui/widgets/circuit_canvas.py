@@ -1,11 +1,21 @@
 """Scrollable read-only circuit canvas widget."""
 
+from libqsim.application.operations import OperationResult
+from libqsim.application.session import EditorSession
 from libqsim.domain.models import GateType
 from PySide6.QtCore import QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPalette, QPen
 from PySide6.QtWidgets import QWidget
 from qsim_gui.state import SessionAdapter
 from qsim_gui.widgets.grid import GridGeometry
+
+
+def handle_drop(
+    session: EditorSession,
+    gate_type: GateType | str,
+    cell: tuple[int, int],
+) -> OperationResult:
+    raise NotImplementedError
 
 
 class CircuitCanvas(QWidget):
