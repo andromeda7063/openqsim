@@ -71,9 +71,7 @@ def validate(circuit: Circuit) -> list[ValidationError]:
 
         # Qubit bounds check: targets and controls must be in 0..num_qubits-1
         all_referenced_qubits = p.targets + p.controls
-        has_invalid_qubit = any(
-            q < 0 or q >= circuit.num_qubits for q in all_referenced_qubits
-        )
+        has_invalid_qubit = any(q < 0 or q >= circuit.num_qubits for q in all_referenced_qubits)
         if has_invalid_qubit:
             is_out_of_range = True
             errors.append(
