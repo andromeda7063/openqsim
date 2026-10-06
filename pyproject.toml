@@ -3,6 +3,7 @@ members = ["libqsim", "qsim-gui"]
 
 [dependency-groups]
 dev = [
+    "hypothesis",
     "mypy",
     "pytest",
     "ruff",
