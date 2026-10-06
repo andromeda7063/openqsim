@@ -10,6 +10,8 @@ from libqsim.application.operations import OperationResult
 from libqsim.domain.models import Circuit
 from libqsim.domain.validation import validate
 from libqsim.persistence.qcs import QcsError, read, write
+from libqsim.qasm.exporter import export_text
+from libqsim.qasm.importer import QasmError, import_text
 from libqsim.simulation.engine import (
     InvalidCircuitError,
     SimulationError,
@@ -244,11 +246,41 @@ class EditorSession:
 
     def import_qasm(self, path: Path | str) -> IoOutcome:
         """Import an OpenQASM 2.0 file into the session."""
-        raise NotImplementedError
+        p = Path(path)
+        try:
+            if p.is_dir():
+                return IoOutcome(ok=False, message=f"Cannot import '{p.name}': path is a directory")
+            text = p.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            return IoOutcome(ok=False, message=f"File not found: '{p.name}'")
+        except OSError as exc:
+            msg = exc.strerror if exc.strerror else str(exc)
+            return IoOutcome(ok=False, message=f"Failed to read file '{p.name}': {msg}")
+
+        try:
+            circuit = import_text(text)
+        except QasmError as exc:
+            return IoOutcome(ok=False, message=str(exc))
+
+        self.establish_imported(circuit)
+        return IoOutcome(ok=True)
 
     def export_qasm(self, path: Path | str) -> IoOutcome:
         """Export the current circuit as OpenQASM 2.0 to a file."""
-        raise NotImplementedError
+        p = Path(path)
+        try:
+            text = export_text(self._circuit)
+        except QasmError as exc:
+            return IoOutcome(ok=False, message=str(exc))
+
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(text, encoding="utf-8")
+        except OSError as exc:
+            msg = exc.strerror if exc.strerror else str(exc)
+            return IoOutcome(ok=False, message=f"Failed to write file '{p.name}': {msg}")
+
+        return IoOutcome(ok=True)
 
     def subscribe(self, callback: Callable[[], None]) -> Callable[[], None]:
         """Subscribe to session state changes. Returns an unsubscribe callable."""
