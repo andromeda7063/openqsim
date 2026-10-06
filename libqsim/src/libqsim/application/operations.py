@@ -1,0 +1,487 @@
+"""Circuit editing operations and mutation results."""
+
+from collections.abc import Iterable
+from dataclasses import dataclass
+from typing import Literal
+
+from libqsim.domain.gates import GateType
+from libqsim.domain.models import Circuit, GatePlacement
+from libqsim.domain.validation import validate
+
+__all__ = [
+    "Clipboard",
+    "OperationResult",
+    "ResizePlan",
+    "change_target",
+    "clear",
+    "copy_gates",
+    "delete_gates",
+    "move_gates",
+    "paste",
+    "place_gate",
+    "plan_resize",
+    "resize",
+]
+
+
+@dataclass(frozen=True)
+class OperationResult:
+    """An immutable result of an editing mutation or operation."""
+
+    status: Literal["applied", "noop", "rejected"]
+    circuit: Circuit
+    messages: tuple[str, ...] = ()
+    touched: tuple[GatePlacement, ...] = ()
+
+
+@dataclass(frozen=True)
+class ResizePlan:
+    """An immutable plan describing the impact of a requested circuit resize."""
+
+    requested: int
+    affected: tuple[GatePlacement, ...]
+    needs_confirmation: bool
+
+
+def place_gate(
+    circuit: Circuit,
+    gate_type: GateType | str,
+    qubit: int,
+    column: int,
+) -> OperationResult:
+    """Place a gate in the circuit using candidate/commit mutation validation.
+
+    Single-qubit gates and measurements occupy (qubit, column).
+    CNOT placed at wire w defaults to control w, target w+1.
+    Toffoli placed at wire w defaults to controls w, w+1, target w+2.
+    """
+    if isinstance(gate_type, str):
+        try:
+            gt = GateType(gate_type)
+        except ValueError:
+            return OperationResult(
+                status="rejected",
+                circuit=circuit,
+                messages=(f"Unknown gate type: '{gate_type}'.",),
+                touched=(),
+            )
+    else:
+        gt = gate_type
+
+    if gt == GateType.CNOT:
+        controls: tuple[int, ...] = (qubit,)
+        targets: tuple[int, ...] = (qubit + 1,)
+    elif gt == GateType.Toffoli:
+        controls = (qubit, qubit + 1)
+        targets = (qubit + 2,)
+    else:
+        controls = ()
+        targets = (qubit,)
+
+    placement = GatePlacement(
+        gate_type=gt,
+        targets=targets,
+        controls=controls,
+        column=column,
+    )
+
+    candidate = circuit.with_placements((*circuit.placements, placement))
+    errors = validate(candidate)
+    if errors:
+        return OperationResult(
+            status="rejected",
+            circuit=circuit,
+            messages=tuple(e.message for e in errors),
+            touched=(),
+        )
+
+    return OperationResult(
+        status="applied",
+        circuit=candidate,
+        messages=(),
+        touched=(placement,),
+    )
+
+
+def delete_gates(
+    circuit: Circuit,
+    placements: Iterable[GatePlacement],
+) -> OperationResult:
+    """Delete the specified placements from the circuit."""
+    to_delete = set(placements).intersection(circuit.placements)
+    if not to_delete:
+        return OperationResult(
+            status="noop",
+            circuit=circuit,
+            messages=(),
+            touched=(),
+        )
+
+    cand_placements = tuple(p for p in circuit.placements if p not in to_delete)
+    candidate = circuit.with_placements(cand_placements)
+    errors = validate(candidate)
+    if errors:
+        return OperationResult(
+            status="rejected",
+            circuit=circuit,
+            messages=tuple(e.message for e in errors),
+            touched=(),
+        )
+
+    return OperationResult(
+        status="applied",
+        circuit=candidate,
+        messages=(),
+        touched=(),
+    )
+
+
+def clear(circuit: Circuit) -> OperationResult:
+    """Clear all gate placements from the circuit."""
+    if not circuit.placements:
+        return OperationResult(
+            status="noop",
+            circuit=circuit,
+            messages=(),
+            touched=(),
+        )
+
+    candidate = circuit.with_placements(())
+    errors = validate(candidate)
+    if errors:
+        return OperationResult(
+            status="rejected",
+            circuit=circuit,
+            messages=tuple(e.message for e in errors),
+            touched=(),
+        )
+
+    return OperationResult(
+        status="applied",
+        circuit=candidate,
+        messages=(),
+        touched=(),
+    )
+
+
+def change_target(
+    circuit: Circuit,
+    placement: GatePlacement,
+) -> OperationResult:
+    """Cycle or swap target and control assignments for a CNOT or Toffoli gate."""
+    if placement not in circuit.placements:
+        return OperationResult(
+            status="rejected",
+            circuit=circuit,
+            messages=("Gate placement not found in circuit.",),
+            touched=(),
+        )
+
+    if placement.gate_type not in (GateType.CNOT, GateType.Toffoli):
+        gt_name = (
+            placement.gate_type.value
+            if hasattr(placement.gate_type, "value")
+            else str(placement.gate_type)
+        )
+        return OperationResult(
+            status="rejected",
+            circuit=circuit,
+            messages=(
+                f"Change target is only supported for CNOT and Toffoli gates, got {gt_name}.",
+            ),
+            touched=(),
+        )
+
+    if placement.gate_type == GateType.CNOT:
+        new_targets = placement.controls
+        new_controls = placement.targets
+        new_placement = GatePlacement(
+            gate_type=GateType.CNOT,
+            targets=new_targets,
+            controls=new_controls,
+            column=placement.column,
+        )
+    else:  # Toffoli
+        occupied = sorted(placement.occupied_qubits)
+        curr_target = placement.targets[0]
+        if curr_target == occupied[0]:  # top -> middle
+            new_target = occupied[1]
+            new_controls = (occupied[0], occupied[2])
+        elif curr_target == occupied[1]:  # middle -> bottom
+            new_target = occupied[2]
+            new_controls = (occupied[0], occupied[1])
+        else:  # bottom -> top
+            new_target = occupied[0]
+            new_controls = (occupied[1], occupied[2])
+
+        new_placement = GatePlacement(
+            gate_type=GateType.Toffoli,
+            targets=(new_target,),
+            controls=new_controls,
+            column=placement.column,
+        )
+
+    cand_placements = tuple(new_placement if p == placement else p for p in circuit.placements)
+    candidate = circuit.with_placements(cand_placements)
+    errors = validate(candidate)
+    if errors:
+        return OperationResult(
+            status="rejected",
+            circuit=circuit,
+            messages=tuple(e.message for e in errors),
+            touched=(),
+        )
+
+    return OperationResult(
+        status="applied",
+        circuit=candidate,
+        messages=(),
+        touched=(new_placement,),
+    )
+
+
+def plan_resize(
+    circuit: Circuit,
+    n: int,
+) -> ResizePlan:
+    """Analyze the impact of resizing the circuit to n qubits."""
+    affected = tuple(
+        p for p in circuit.canonical_placements() if any(q >= n for q in p.occupied_qubits)
+    )
+    needs_confirmation = len(affected) > 0 and n < circuit.num_qubits
+    return ResizePlan(
+        requested=n,
+        affected=affected,
+        needs_confirmation=needs_confirmation,
+    )
+
+
+def resize(
+    circuit: Circuit,
+    n: int,
+    confirmed: bool = False,
+) -> OperationResult:
+    """Resize the circuit qubit count to n, optionally deleting affected gates if confirmed."""
+    if not (1 <= n <= 10):
+        return OperationResult(
+            status="rejected",
+            circuit=circuit,
+            messages=(
+                f"Qubit count {n} is out of range; must be between 1 and 10 qubits inclusive.",
+            ),
+            touched=(),
+        )
+
+    if n == circuit.num_qubits:
+        return OperationResult(
+            status="noop",
+            circuit=circuit,
+            messages=(),
+            touched=(),
+        )
+
+    if n > circuit.num_qubits:
+        candidate = circuit.with_num_qubits(n)
+        errors = validate(candidate)
+        if errors:
+            return OperationResult(
+                status="rejected",
+                circuit=circuit,
+                messages=tuple(e.message for e in errors),
+                touched=(),
+            )
+        return OperationResult(
+            status="applied",
+            circuit=candidate,
+            messages=(),
+            touched=(),
+        )
+
+    # n < circuit.num_qubits
+    plan = plan_resize(circuit, n)
+    if plan.needs_confirmation and not confirmed:
+        return OperationResult(
+            status="rejected",
+            circuit=circuit,
+            messages=("Decreasing qubit count will remove affected gates; confirmation required.",),
+            touched=(),
+        )
+
+    if confirmed:
+        affected_set = set(plan.affected)
+        cand_placements = tuple(p for p in circuit.placements if p not in affected_set)
+        candidate = Circuit(num_qubits=n, placements=cand_placements)
+    else:
+        candidate = circuit.with_num_qubits(n)
+
+    errors = validate(candidate)
+    if errors:
+        return OperationResult(
+            status="rejected",
+            circuit=circuit,
+            messages=tuple(e.message for e in errors),
+            touched=(),
+        )
+
+    return OperationResult(
+        status="applied",
+        circuit=candidate,
+        messages=(),
+        touched=(),
+    )
+
+
+@dataclass(frozen=True)
+class Clipboard:
+    """An immutable container of copied gate placements relative to anchor (0, 0)."""
+
+    placements: tuple[GatePlacement, ...]
+
+
+def move_gates(
+    circuit: Circuit,
+    selection: frozenset[GatePlacement] | Iterable[GatePlacement],
+    d_qubit: int,
+    d_column: int,
+) -> OperationResult:
+    """Translate every gate in the selection together by d_qubit and d_column."""
+    sel_set = frozenset(selection)
+    if not sel_set.issubset(circuit.placements):
+        raise ValueError("Selection contains placements not present in circuit.")
+
+    if not sel_set or (d_qubit == 0 and d_column == 0):
+        return OperationResult(
+            status="noop",
+            circuit=circuit,
+            messages=(),
+            touched=(),
+        )
+
+    unselected = tuple(p for p in circuit.placements if p not in sel_set)
+    moved: list[GatePlacement] = []
+    for p in circuit.placements:
+        if p in sel_set:
+            new_targets = tuple(t + d_qubit for t in p.targets)
+            new_controls = tuple(c + d_qubit for c in p.controls)
+            new_column = p.column + d_column
+            moved.append(
+                GatePlacement(
+                    gate_type=p.gate_type,
+                    targets=new_targets,
+                    controls=new_controls,
+                    column=new_column,
+                )
+            )
+
+    candidate = circuit.with_placements((*unselected, *moved))
+    if candidate == circuit:
+        return OperationResult(
+            status="noop",
+            circuit=circuit,
+            messages=(),
+            touched=(),
+        )
+
+    errors = validate(candidate)
+    if errors:
+        return OperationResult(
+            status="rejected",
+            circuit=circuit,
+            messages=tuple(e.message for e in errors),
+            touched=(),
+        )
+
+    return OperationResult(
+        status="applied",
+        circuit=candidate,
+        messages=(),
+        touched=tuple(moved),
+    )
+
+
+def copy_gates(
+    circuit: Circuit,
+    selection: frozenset[GatePlacement] | Iterable[GatePlacement],
+) -> Clipboard | None:
+    """Copy the selected circuit placements relative to their top-left anchor."""
+    sel_set = frozenset(selection)
+    if not sel_set:
+        return None
+
+    if not sel_set.issubset(circuit.placements):
+        raise ValueError("Selection contains placements not present in circuit.")
+
+    min_q = min(min(p.occupied_qubits) for p in sel_set)
+    min_col = min(p.column for p in sel_set)
+
+    sel_placements = tuple(p for p in circuit.canonical_placements() if p in sel_set)
+    rel_placements: list[GatePlacement] = []
+    for p in sel_placements:
+        rel_targets = tuple(t - min_q for t in p.targets)
+        rel_controls = tuple(c - min_q for c in p.controls)
+        rel_col = p.column - min_col
+        rel_placements.append(
+            GatePlacement(
+                gate_type=p.gate_type,
+                targets=rel_targets,
+                controls=rel_controls,
+                column=rel_col,
+            )
+        )
+
+    return Clipboard(placements=tuple(rel_placements))
+
+
+def paste(
+    circuit: Circuit,
+    clipboard: Clipboard | None,
+    anchor_qubit: int,
+    anchor_column: int,
+) -> OperationResult:
+    """Paste the clipboard contents anchoring at (anchor_qubit, anchor_column)."""
+    if clipboard is None or not clipboard.placements:
+        return OperationResult(
+            status="noop",
+            circuit=circuit,
+            messages=(),
+            touched=(),
+        )
+
+    pasted: list[GatePlacement] = []
+    for p in clipboard.placements:
+        dest_targets = tuple(t + anchor_qubit for t in p.targets)
+        dest_controls = tuple(c + anchor_qubit for c in p.controls)
+        dest_col = p.column + anchor_column
+        pasted.append(
+            GatePlacement(
+                gate_type=p.gate_type,
+                targets=dest_targets,
+                controls=dest_controls,
+                column=dest_col,
+            )
+        )
+
+    candidate = circuit.with_placements((*circuit.placements, *pasted))
+    if candidate == circuit:
+        return OperationResult(
+            status="noop",
+            circuit=circuit,
+            messages=(),
+            touched=(),
+        )
+
+    errors = validate(candidate)
+    if errors:
+        return OperationResult(
+            status="rejected",
+            circuit=circuit,
+            messages=tuple(e.message for e in errors),
+            touched=(),
+        )
+
+    return OperationResult(
+        status="applied",
+        circuit=candidate,
+        messages=(),
+        touched=tuple(pasted),
+    )

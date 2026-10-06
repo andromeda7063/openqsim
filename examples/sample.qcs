@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "num_qubits": 3,
+  "gates": [
+    {
+      "gate_type": "H",
+      "targets": [
+        0
+      ],
+      "controls": [],
+      "column": 0
+    },
+    {
+      "gate_type": "CNOT",
+      "targets": [
+        1
+      ],
+      "controls": [
+        0
+      ],
+      "column": 1
+    },
+    {
+      "gate_type": "Toffoli",
+      "targets": [
+        1
+      ],
+      "controls": [
+        0,
+        2
+      ],
+      "column": 2
+    },
+    {
+      "gate_type": "Measurement",
+      "targets": [
+        0
+      ],
+      "controls": [],
+      "column": 3
+    }
+  ]
+}
