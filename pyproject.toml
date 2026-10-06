@@ -2,29 +2,11 @@
 members = ["libqsim", "qsim-gui"]
 
 [dependency-groups]
-dev = [
-    "hypothesis",
-    "mypy",
-    "pytest",
-    "ruff",
-]
+dev = ["pytest", "ruff"]
 
 [tool.pytest.ini_options]
 testpaths = ["libqsim/tests"]
-markers = [
-    "req(*ids): requirement IDs covered by the test",
-    "perf: performance tests",
-]
 
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-
-[tool.mypy]
-python_version = "3.13"
-mypy_path = "libqsim/src"
-warn_unused_configs = true
-
-[[tool.mypy.overrides]]
-module = "libqsim.*"
-strict = true

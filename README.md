@@ -73,8 +73,6 @@ OpenQSim/
 │   │       │   └── validation.py
 │   │       ├── application/
 │   │       │   ├── __init__.py
-│   │       │   ├── operations.py
-│   │       │   ├── selection.py
 │   │       │   ├── session.py
 │   │       │   └── history.py
 │   │       ├── simulation/
