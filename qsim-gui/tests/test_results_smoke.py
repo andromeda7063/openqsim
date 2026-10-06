@@ -25,7 +25,7 @@ def qapp() -> Generator[QApplication]:
     yield app  # type: ignore[misc]
 
 
-@pytest.mark.req("FR-4.1", "FR-4.2", "FR-4.7", "FR-4.10", "FR-4.14")
+@pytest.mark.req("FR-4.1", "FR-4.2", "FR-4.6", "FR-4.7", "FR-4.10", "FR-4.14", "NFR-1.1", "NFR-6.2")
 def test_bell_state_run_results_panel(qapp: QApplication) -> None:
     session = EditorSession()
     # Bell state: H on 0, CNOT with control 0, target 1
@@ -34,11 +34,12 @@ def test_bell_state_run_results_panel(qapp: QApplication) -> None:
 
     adapter = SessionAdapter(session)
     panel = ResultsPanel(adapter=adapter)
+    panel.show()
 
     # Before run: empty state label visible
     empty_label = panel.findChild(QLabel, "empty_state_label")
     assert empty_label is not None
-    assert empty_label.isVisible() is True
+    assert not empty_label.isHidden()
 
     # Run simulation
     outcome = adapter.run()
@@ -69,16 +70,17 @@ def test_stale_banner_appears_after_mutation(qapp: QApplication) -> None:
     session.apply(place_gate(session.circuit, GateType.H, qubit=0, column=0))
     adapter = SessionAdapter(session)
     panel = ResultsPanel(adapter=adapter)
+    panel.show()
 
     adapter.run()
     stale_banner = panel.findChild(QLabel, "stale_banner")
     assert stale_banner is not None
-    assert stale_banner.isVisible() is False
+    assert stale_banner.isHidden() is True
 
     # Mutate circuit
     adapter.apply(place_gate(session.circuit, GateType.X, qubit=1, column=1))
     assert adapter.simulation_status == SimulationStatus.STALE
-    assert stale_banner.isVisible() is True
+    assert stale_banner.isHidden() is False
     assert "Results are out of date" in stale_banner.text()
 
 

@@ -1,7 +1,6 @@
 """Main window of the OpenQSim application."""
 
 from libqsim.application.session import EditorSession, SaveStatus, SimulationStatus
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -18,6 +17,7 @@ from qsim_gui.dialogs import QtUserInterface, UserInterface
 from qsim_gui.state import SessionAdapter
 from qsim_gui.widgets.circuit_canvas import CircuitCanvas
 from qsim_gui.widgets.gate_palette import GatePalette
+from qsim_gui.widgets.results_panel import ResultsPanel
 
 
 class MainWindow(QMainWindow):
@@ -59,6 +59,10 @@ class MainWindow(QMainWindow):
     @property
     def palette(self) -> GatePalette:
         return self._palette
+
+    @property
+    def results_panel(self) -> ResultsPanel:
+        return self._results_panel
 
     def _setup_ui(self) -> None:
         self._setup_menus()
@@ -125,7 +129,7 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(6)
 
-        # Three regions: gate palette, scrollable canvas, results placeholder
+        # Three regions: gate palette, scrollable canvas, results panel
         self._palette = GatePalette(parent=self)
         self._palette.setObjectName("palette_region")
 
@@ -137,13 +141,12 @@ class MainWindow(QMainWindow):
         self._canvas_scroll.setWidget(self._canvas)
         self._canvas_scroll.setWidgetResizable(False)
 
-        self._results_placeholder = QLabel("Results", self)
-        self._results_placeholder.setObjectName("results_region")
-        self._results_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._results_panel = ResultsPanel(adapter=self._adapter, parent=self)
+        self._results_panel.setObjectName("results_region")
 
         layout.addWidget(self._palette, 1)
         layout.addWidget(self._canvas_scroll, 4)
-        layout.addWidget(self._results_placeholder, 3)
+        layout.addWidget(self._results_panel, 3)
 
     def _setup_status_bar(self) -> None:
         status_bar = QStatusBar(self)
