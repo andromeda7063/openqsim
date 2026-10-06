@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "andromeda7063", email = "abhinavsriram7063@gmail.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.13,<3.14"
 dependencies = [
     "numpy>=2.5.3",
     "qiskit>=2.5.2",
