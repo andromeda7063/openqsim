@@ -1,5 +1,7 @@
 """Application layer for OpenQSim: headless session, history, editing, and selection."""
 
+from libqsim.application.guarded import UserChoice, run_guarded
+from libqsim.application.history import History
 from libqsim.application.operations import (
     Clipboard,
     OperationResult,
@@ -22,11 +24,25 @@ from libqsim.application.selection import (
     prune_selection,
     select_all,
 )
+from libqsim.application.session import (
+    EditorSession,
+    IoOutcome,
+    RunOutcome,
+    SaveStatus,
+    SimulationStatus,
+)
 
 __all__ = [
     "Clipboard",
+    "EditorSession",
+    "History",
+    "IoOutcome",
     "OperationResult",
     "ResizePlan",
+    "RunOutcome",
+    "SaveStatus",
+    "SimulationStatus",
+    "UserChoice",
     "change_target",
     "clear",
     "click_selection",
@@ -41,5 +57,6 @@ __all__ = [
     "plan_resize",
     "prune_selection",
     "resize",
+    "run_guarded",
     "select_all",
 ]

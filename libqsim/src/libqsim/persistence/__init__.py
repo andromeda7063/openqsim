@@ -1,3 +1,5 @@
-"""Persistence layer for OpenQSim: QCS serializer and loader."""
+"""Persistence layer for OpenQSim: QCS file serialization and deserialization."""
 
-__all__: list[str] = []
+from libqsim.persistence.qcs import QcsError, dumps, loads, read, write
+
+__all__ = ["QcsError", "dumps", "loads", "read", "write"]

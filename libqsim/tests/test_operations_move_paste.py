@@ -143,7 +143,7 @@ def test_copy_gates() -> None:
         copy_gates(c, {p_h})
 
 
-@pytest.mark.req("FR-1.25", "FR-1.26", "FR-1.27", "FR-1.28", "FR-1.29", "FR-1.47")
+@pytest.mark.req("FR-1.25", "FR-1.26", "FR-1.27", "FR-1.28", "FR-1.29", "FR-1.47", "FR-1.48")
 def test_paste_operations() -> None:
     """paste places clipboard at destination anchor and rejects out-of-bounds or collision."""
     c = Circuit(num_qubits=4)
@@ -152,10 +152,16 @@ def test_paste_operations() -> None:
     assert paste(c, None, anchor_qubit=0, anchor_column=0).status == "noop"
     assert paste(c, Clipboard(placements=()), anchor_qubit=0, anchor_column=0).status == "noop"
 
-    # Valid paste of CNOT relative (control 0, target 1, col 0)
+    # Default anchor paste at (qubit 0, column 0) per FR-1.48
     rel_cx = GatePlacement(GateType.CNOT, targets=(1,), controls=(0,), column=0)
     cb = Clipboard(placements=(rel_cx,))
+    res_default = paste(c, cb, anchor_qubit=0, anchor_column=0)
+    assert res_default.status == "applied"
+    exp_default = GatePlacement(GateType.CNOT, targets=(1,), controls=(0,), column=0)
+    assert res_default.touched == (exp_default,)
+    assert res_default.circuit.placements == (exp_default,)
 
+    # Valid paste of CNOT relative (control 0, target 1, col 0) at custom anchor (1, 5)
     res_paste = paste(c, cb, anchor_qubit=1, anchor_column=5)
     assert res_paste.status == "applied"
     exp_cx = GatePlacement(GateType.CNOT, targets=(2,), controls=(1,), column=5)
