@@ -84,6 +84,10 @@ class CommandActions:
         self.action_clear.setEnabled(False)
         self.action_clear.triggered.connect(self._handle_clear)
 
+        self.action_change_target = QAction("Change Target", parent)
+        self.action_change_target.setEnabled(False)
+        self.action_change_target.triggered.connect(self._handle_change_target)
+
         # Simulate actions
         self.action_run = QAction("Run", parent)
         self.action_run.setEnabled(True)
@@ -117,6 +121,12 @@ class CommandActions:
             self._selection_controller is not None and len(self._selection_controller.selection) > 0
         )
         self.action_delete.setEnabled(has_selection)
+
+        can_change_target = (
+            self._selection_controller is not None
+            and self._selection_controller.can_change_target()
+        )
+        self.action_change_target.setEnabled(can_change_target)
 
     def _handle_undo(self) -> None:
         self._adapter.undo()
@@ -154,3 +164,13 @@ class CommandActions:
                 self._selection_controller.clear_selection()
         elif res.status == "rejected":
             self._ui.show_error("Clear Error", "\n".join(res.messages))
+
+    def _handle_change_target(self) -> None:
+        if self._selection_controller is None or not self._selection_controller.can_change_target():
+            return
+        res = self._selection_controller.change_target_selected(self._adapter.circuit)
+        if res.status == "applied":
+            self._adapter.apply(res)
+            self._selection_controller.follow_move(res)
+        elif res.status == "rejected":
+            self._ui.show_error("Change Target Error", "\n".join(res.messages))

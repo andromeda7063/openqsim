@@ -220,8 +220,11 @@ def test_empty_selection_arrow_key_is_noop() -> None:
 
 @pytest.mark.req("FR-1.50")
 def test_change_target_enabled_states(qapp: QApplication) -> None:
+    from libqsim.application.operations import resize
+
     session = EditorSession()
     adapter = SessionAdapter(session)
+    adapter.apply(resize(session.circuit, 3))
     ui = StubUserInterface()
     widget = QWidget()
     ctrl = SelectionController()

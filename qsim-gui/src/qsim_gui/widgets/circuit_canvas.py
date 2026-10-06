@@ -1,5 +1,9 @@
 """Scrollable read-only circuit canvas widget with drag-and-drop placement."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from libqsim.application.operations import OperationResult, delete_gates, place_gate
 from libqsim.application.selection import gate_at
 from libqsim.application.session import EditorSession
@@ -7,6 +11,7 @@ from libqsim.domain.models import GatePlacement, GateType
 from PySide6.QtCore import QMimeData, QPoint, QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import (
     QColor,
+    QContextMenuEvent,
     QDragEnterEvent,
     QDragLeaveEvent,
     QDragMoveEvent,
@@ -19,12 +24,15 @@ from PySide6.QtGui import (
     QPalette,
     QPen,
 )
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QMenu, QWidget
 from qsim_gui.dialogs import UserInterface
 from qsim_gui.state import SessionAdapter
 from qsim_gui.widgets.gate_palette import decode_gate_mime
 from qsim_gui.widgets.grid import GridGeometry
 from qsim_gui.widgets.selection_controller import SelectionController
+
+if TYPE_CHECKING:
+    from qsim_gui.commands import CommandActions
 
 
 def handle_drop(
@@ -49,6 +57,7 @@ class CircuitCanvas(QWidget):
         geometry: GridGeometry | None = None,
         ui: UserInterface | None = None,
         controller: SelectionController | None = None,
+        commands: CommandActions | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -57,6 +66,7 @@ class CircuitCanvas(QWidget):
             geometry if geometry is not None else GridGeometry(cell_width=48, cell_height=48)
         )
         self._ui = ui
+        self._commands = commands
         self._controller = controller if controller is not None else SelectionController()
         self._controller.subscribe(self.update)
         self._drag_cells: list[tuple[int, int]] = []
@@ -154,6 +164,25 @@ class CircuitCanvas(QWidget):
             self._drag_cells = cells
             self.update()
 
+    def scroll_selection_into_view(self) -> None:
+        """Scroll the scroll area so the current selection is visible."""
+        if not self._controller.selection:
+            return
+        all_qubits = [q for p in self._controller.selection for q in p.occupied_qubits]
+        all_cols = [p.column for p in self._controller.selection]
+        min_q, max_q = min(all_qubits), max(all_qubits)
+        min_c, max_c = min(all_cols), max(all_cols)
+        x0, y0, _, _ = self._geo.cell_to_rect(min_q, min_c)
+        x1, y1, w, h = self._geo.cell_to_rect(max_q, max_c)
+        cx = (x0 + x1 + w) // 2
+        cy = (y0 + y1 + h) // 2
+        parent = self.parentWidget()
+        while parent is not None:
+            if hasattr(parent, "ensureVisible"):
+                parent.ensureVisible(cx, cy, 50, 50)
+                break
+            parent = parent.parentWidget()
+
     def mousePressEvent(self, event: QMouseEvent) -> None:
         self.setFocus()
         if event.button() == Qt.MouseButton.LeftButton:
@@ -168,7 +197,9 @@ class CircuitCanvas(QWidget):
             if cell is not None:
                 hit = gate_at(self._adapter.circuit, cell[0], cell[1])
                 if hit is not None:
-                    self._controller.press_gate(hit, cell, ctrl=ctrl)
+                    self._controller.press_cell_for_drag(
+                        self._adapter.circuit, cell, (pt.x(), pt.y()), ctrl=ctrl
+                    )
                 else:
                     self._controller.press_empty(cell, ctrl=ctrl)
                     self._controller.marquee_begin(cell, ctrl=ctrl)
@@ -179,8 +210,16 @@ class CircuitCanvas(QWidget):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        if self._controller.is_marquee_active and self._marquee_pixel_start is not None:
-            self._marquee_pixel_current = event.position().toPoint()
+        pt = event.position().toPoint()
+        if self._controller.is_drag_initiated:
+            cell = self._geo.point_to_cell(
+                pt.x(), pt.y(), num_qubits=self._adapter.circuit.num_qubits, num_columns=50
+            )
+            if cell is not None:
+                self._controller.update_drag_move(cell, (pt.x(), pt.y()))
+            self.update()
+        elif self._controller.is_marquee_active and self._marquee_pixel_start is not None:
+            self._marquee_pixel_current = pt
             cells = self._geo.rect_to_cells(
                 self._marquee_pixel_start.x(),
                 self._marquee_pixel_start.y(),
@@ -201,7 +240,23 @@ class CircuitCanvas(QWidget):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        if self._controller.is_marquee_active:
+        if self._controller.is_drag_initiated:
+            pt = event.position().toPoint()
+            cell = self._geo.point_to_cell(
+                pt.x(), pt.y(), num_qubits=self._adapter.circuit.num_qubits, num_columns=50
+            )
+            d_q, d_c = self._controller.drag_delta
+            action = self._controller.end_drag_move(self._adapter.circuit, cell)
+            if action == "move" and (d_q != 0 or d_c != 0):
+                res = self._controller.move_selection(self._adapter.circuit, d_q, d_c)
+                if res.status == "applied":
+                    self._adapter.apply(res)
+                    self._controller.follow_move(res)
+                    self.scroll_selection_into_view()
+                elif res.status == "rejected" and self._ui is not None:
+                    self._ui.show_error("Move Error", "\n".join(res.messages))
+            self.update()
+        elif self._controller.is_marquee_active:
             self._controller.marquee_end(self._adapter.circuit)
             self._marquee_pixel_start = None
             self._marquee_pixel_current = None
@@ -226,7 +281,51 @@ class CircuitCanvas(QWidget):
             self._controller.select_all(self._adapter.circuit)
             event.accept()
             return
+
+        d_q, d_c = 0, 0
+        if event.key() == Qt.Key.Key_Left:
+            d_c = -1
+        elif event.key() == Qt.Key.Key_Right:
+            d_c = 1
+        elif event.key() == Qt.Key.Key_Up:
+            d_q = -1
+        elif event.key() == Qt.Key.Key_Down:
+            d_q = 1
+
+        if (d_q != 0 or d_c != 0) and self._controller.selection:
+            res = self._controller.move_selection(self._adapter.circuit, d_q, d_c)
+            if res.status == "applied":
+                self._adapter.apply(res)
+                self._controller.follow_move(res)
+                self.scroll_selection_into_view()
+            elif res.status == "rejected" and self._ui is not None:
+                self._ui.show_error("Move Error", "\n".join(res.messages))
+            event.accept()
+            return
+
         super().keyPressEvent(event)
+
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
+        menu = QMenu(self)
+        if self._commands is not None:
+            menu.addAction(self._commands.action_change_target)
+            menu.addSeparator()
+            menu.addAction(self._commands.action_delete)
+        else:
+            action_ct = menu.addAction("Change Target")
+            action_ct.setEnabled(self._controller.can_change_target())
+            action_ct.triggered.connect(self._handle_change_target)
+        menu.exec(event.globalPos())
+
+    def _handle_change_target(self) -> None:
+        if not self._controller.can_change_target():
+            return
+        res = self._controller.change_target_selected(self._adapter.circuit)
+        if res.status == "applied":
+            self._adapter.apply(res)
+            self._controller.follow_move(res)
+        elif res.status == "rejected" and self._ui is not None:
+            self._ui.show_error("Change Target Error", "\n".join(res.messages))
 
     def paintEvent(self, event) -> None:  # type: ignore[no-untyped-def]
         painter = QPainter(self)
@@ -342,6 +441,25 @@ class CircuitCanvas(QWidget):
             painter.setPen(QPen(highlight_color, 1.5, Qt.PenStyle.DashLine))
             painter.setBrush(fill_color)
             painter.drawRect(marquee_rect)
+
+        # 5. Draw move preview outline if dragging move
+        if self._controller.is_dragging_move:
+            d_q, d_c = self._controller.drag_delta
+            if d_q != 0 or d_c != 0:
+                highlight_color = pal.color(QPalette.ColorRole.Highlight)
+                outline_pen = QPen(highlight_color, 2.0, Qt.PenStyle.DashLine)
+                painter.setPen(outline_pen)
+                painter.setBrush(Qt.BrushStyle.NoBrush)
+                for p in self._controller.selection:
+                    tgt_col = p.column + d_c
+                    tgt_qubits = [q + d_q for q in p.occupied_qubits]
+                    if all(0 <= q < num_qubits for q in tgt_qubits) and 0 <= tgt_col < 50:
+                        min_q = min(tgt_qubits)
+                        max_q = max(tgt_qubits)
+                        hx, hy, hw, _ = self._geo.cell_to_rect(min_q, tgt_col)
+                        _, b_hy, _, b_hh = self._geo.cell_to_rect(max_q, tgt_col)
+                        total_h = (b_hy + b_hh) - hy
+                        painter.drawRoundedRect(QRectF(hx + 3, hy + 3, hw - 6, total_h - 6), 5, 5)
 
     def _draw_single_qubit_gate(
         self,
