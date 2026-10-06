@@ -1,7 +1,12 @@
 """Main window of the OpenQSim application."""
 
+from pathlib import Path
+
+from libqsim.application.guarded import run_guarded
 from libqsim.application.operations import plan_resize, resize
 from libqsim.application.session import EditorSession, SaveStatus, SimulationStatus
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QAction, QCloseEvent, QImage
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -16,6 +21,7 @@ from PySide6.QtWidgets import (
 
 from qsim_gui.commands import CommandActions
 from qsim_gui.dialogs import QtUserInterface, UserInterface
+from qsim_gui.help import HelpWindow, open_help_window
 from qsim_gui.state import SessionAdapter
 from qsim_gui.widgets.circuit_canvas import CircuitCanvas
 from qsim_gui.widgets.gate_palette import GatePalette
@@ -36,7 +42,12 @@ class MainWindow(QMainWindow):
             adapter = SessionAdapter(EditorSession())
         self._adapter = adapter
         self._ui = ui if ui is not None else QtUserInterface(self)
+        self._help_windows: list[HelpWindow] = []
         self._commands = CommandActions(self, self._adapter, self._ui)
+        self._commands.on_export_circuit_image = self.export_circuit_image
+        self._commands.on_export_bloch_image = self.export_bloch_image
+        self._commands.on_export_histogram_image = self.export_histogram_image
+        self._commands.enable_file_actions(True)
 
         self._setup_ui()
         self._adapter.changed.connect(self._on_session_changed)
@@ -66,6 +77,15 @@ class MainWindow(QMainWindow):
     def results_panel(self) -> ResultsPanel:
         return self._results_panel
 
+    @property
+    def help_windows(self) -> list[HelpWindow]:
+        return self._help_windows
+
+    def _open_help(self, doc_key: str, title: str) -> HelpWindow:
+        win = open_help_window(doc_key, title, parent=self)
+        self._help_windows.append(win)
+        return win
+
     def _setup_ui(self) -> None:
         self._setup_menus()
         self._setup_toolbar()
@@ -85,7 +105,13 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         file_menu.addAction(self._commands.action_import_qasm)
         file_menu.addAction(self._commands.action_export_qasm)
-        file_menu.addAction(self._commands.action_export_image)
+
+        export_image_menu = QMenu("Export &Image", self)
+        export_image_menu.addAction(self._commands.action_export_circuit_image)
+        export_image_menu.addAction(self._commands.action_export_bloch_image)
+        export_image_menu.addAction(self._commands.action_export_histogram_image)
+        file_menu.addMenu(export_image_menu)
+        self._commands.action_export_image.setMenu(export_image_menu)
 
         # Edit menu
         edit_menu = menubar.addMenu("&Edit")
@@ -104,8 +130,29 @@ class MainWindow(QMainWindow):
         simulate_menu = menubar.addMenu("&Simulate")
         simulate_menu.addAction(self._commands.action_run)
 
-        # Help menu placeholder
+        # Help menu
         self._help_menu: QMenu = menubar.addMenu("&Help")
+        self.action_help_quick_start = QAction("Quick Start", self)
+        self.action_help_quick_start.triggered.connect(
+            lambda: self._open_help("quick-start", "Quick Start")
+        )
+        self._help_menu.addAction(self.action_help_quick_start)
+
+        self.action_help_qcs = QAction("QCS Format", self)
+        self.action_help_qcs.triggered.connect(lambda: self._open_help("qcs-format", "QCS Format"))
+        self._help_menu.addAction(self.action_help_qcs)
+
+        self.action_help_qasm = QAction("OpenQASM Support", self)
+        self.action_help_qasm.triggered.connect(
+            lambda: self._open_help("qasm-support", "OpenQASM Support")
+        )
+        self._help_menu.addAction(self.action_help_qasm)
+
+        self._help_menu.addSeparator()
+
+        self.action_help_about = QAction("About OpenQSim", self)
+        self.action_help_about.triggered.connect(lambda: self._open_help("about", "About OpenQSim"))
+        self._help_menu.addAction(self.action_help_about)
 
     def _setup_toolbar(self) -> None:
         toolbar = QToolBar("Main Toolbar", self)
@@ -255,3 +302,111 @@ class MainWindow(QMainWindow):
         else:
             self._sim_status_label.setText("Simulation: None")
             self._sim_status_label.setStyleSheet("color: inherit; padding: 2px 6px;")
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        """Handle window close event guarded by SaveStatus."""
+        if self._adapter.save_status == SaveStatus.DIRTY:
+            choice = self._ui.prompt_save_changes(
+                "Unsaved Changes",
+                "Save changes before closing OpenQSim?",
+            )
+            success = run_guarded(
+                self._adapter.session,
+                choice,
+                self._commands.handle_save,
+                lambda: None,
+            )
+            if success:
+                event.accept()
+            else:
+                event.ignore()
+        else:
+            event.accept()
+
+    def export_circuit_image(self, path: Path | str | None = None) -> bool:
+        """Export the full 50-column circuit canvas as a PNG image."""
+        if path is None:
+            chosen = self._ui.choose_save_file(
+                "Export Circuit Diagram",
+                "PNG Image (*.png);;All Files (*)",
+                default_name="circuit.png",
+            )
+            if chosen is None:
+                return False
+            path = chosen
+        target = Path(path)
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            # Full 50-column canvas size
+            canvas_size = self._canvas.size()
+            image = QImage(canvas_size, QImage.Format.Format_ARGB32)
+            image.fill(Qt.GlobalColor.white)
+            self._canvas.render(image)
+            if not image.save(str(target), "PNG"):
+                raise OSError(f"Failed to write image to {target}")
+            return True
+        except OSError as exc:
+            self._ui.show_error("Export Error", f"Failed to export circuit image: {exc}")
+            return False
+
+    def export_bloch_image(self, path: Path | str | None = None) -> bool:
+        """Export the Bloch sphere view as a PNG image."""
+        if path is None:
+            chosen = self._ui.choose_save_file(
+                "Export Bloch View",
+                "PNG Image (*.png);;All Files (*)",
+                default_name="bloch.png",
+            )
+            if chosen is None:
+                return False
+            path = chosen
+        target = Path(path)
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            bloch_widget = self._results_panel._bloch_view
+            layout = bloch_widget.layout()
+            hint = layout.sizeHint() if layout is not None else bloch_widget.sizeHint()
+            w = max(hint.width(), bloch_widget.width(), 320)
+            h = max(hint.height(), bloch_widget.height(), 200)
+            orig_size = bloch_widget.size()
+            bloch_widget.resize(w, h)
+            image = QImage(QSize(w, h), QImage.Format.Format_ARGB32)
+            image.fill(Qt.GlobalColor.white)
+            bloch_widget.render(image)
+            bloch_widget.resize(orig_size)
+            if not image.save(str(target), "PNG"):
+                raise OSError(f"Failed to write image to {target}")
+            return True
+        except OSError as exc:
+            self._ui.show_error("Export Error", f"Failed to export Bloch view image: {exc}")
+            return False
+
+    def export_histogram_image(self, path: Path | str | None = None) -> bool:
+        """Export the histogram view as a PNG image."""
+        if path is None:
+            chosen = self._ui.choose_save_file(
+                "Export Histogram View",
+                "PNG Image (*.png);;All Files (*)",
+                default_name="histogram.png",
+            )
+            if chosen is None:
+                return False
+            path = chosen
+        target = Path(path)
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            hist_widget = self._results_panel._histogram_view
+            w = max(hist_widget.width(), 640)
+            h = max(hist_widget.height(), 320)
+            orig_size = hist_widget.size()
+            hist_widget.resize(w, h)
+            image = QImage(QSize(w, h), QImage.Format.Format_ARGB32)
+            image.fill(Qt.GlobalColor.white)
+            hist_widget.render(image)
+            hist_widget.resize(orig_size)
+            if not image.save(str(target), "PNG"):
+                raise OSError(f"Failed to write image to {target}")
+            return True
+        except OSError as exc:
+            self._ui.show_error("Export Error", f"Failed to export histogram image: {exc}")
+            return False

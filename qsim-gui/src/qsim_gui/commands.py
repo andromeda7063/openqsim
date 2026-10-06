@@ -1,5 +1,9 @@
 """Command actions and shortcut bindings for the GUI."""
 
+from collections.abc import Callable
+from pathlib import Path
+
+from libqsim.application.guarded import run_guarded
 from libqsim.application.operations import (
     Clipboard,
     clear,
@@ -7,6 +11,7 @@ from libqsim.application.operations import (
     delete_gates,
     paste,
 )
+from libqsim.application.session import SaveStatus
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QWidget
 
@@ -31,32 +36,60 @@ class CommandActions:
         self._selection_controller: SelectionController | None = None
         self._clipboard: Clipboard | None = None
 
+        # Callbacks for image export
+        self.on_export_circuit_image: Callable[[Path | str | None], bool] | None = None
+        self.on_export_bloch_image: Callable[[Path | str | None], bool] | None = None
+        self.on_export_histogram_image: Callable[[Path | str | None], bool] | None = None
+
         # File actions
         self.action_new = QAction("New", parent)
         self.action_new.setShortcut(QKeySequence("Ctrl+N"))
         self.action_new.setEnabled(False)
+        self.action_new.triggered.connect(self.handle_new)
 
         self.action_open = QAction("Open...", parent)
         self.action_open.setShortcut(QKeySequence("Ctrl+O"))
         self.action_open.setEnabled(False)
+        self.action_open.triggered.connect(lambda: self.handle_open())
 
         self.action_save = QAction("Save", parent)
         self.action_save.setShortcut(QKeySequence("Ctrl+S"))
         self.action_save.setEnabled(False)
+        self.action_save.triggered.connect(self.handle_save)
 
         self.action_save_as = QAction("Save As...", parent)
         self.action_save_as.setShortcut(QKeySequence("Ctrl+Shift+S"))
         self.action_save_as.setEnabled(False)
+        self.action_save_as.triggered.connect(lambda: self.handle_save_as())
 
         self.action_import_qasm = QAction("Import OpenQASM...", parent)
         self.action_import_qasm.setEnabled(False)
+        self.action_import_qasm.triggered.connect(lambda: self.handle_import_qasm())
 
         self.action_export_qasm = QAction("Export OpenQASM...", parent)
         self.action_export_qasm.setShortcut(QKeySequence("Ctrl+E"))
         self.action_export_qasm.setEnabled(False)
+        self.action_export_qasm.triggered.connect(lambda: self.handle_export_qasm())
 
         self.action_export_image = QAction("Export Image...", parent)
         self.action_export_image.setEnabled(False)
+        self.action_export_image.triggered.connect(lambda: self.handle_export_circuit_image())
+
+        self.action_export_circuit_image = QAction("Export Circuit Diagram (PNG)...", parent)
+        self.action_export_circuit_image.setEnabled(False)
+        self.action_export_circuit_image.triggered.connect(
+            lambda: self.handle_export_circuit_image()
+        )
+
+        self.action_export_bloch_image = QAction("Export Bloch View (PNG)...", parent)
+        self.action_export_bloch_image.setEnabled(False)
+        self.action_export_bloch_image.triggered.connect(lambda: self.handle_export_bloch_image())
+
+        self.action_export_histogram_image = QAction("Export Histogram (PNG)...", parent)
+        self.action_export_histogram_image.setEnabled(False)
+        self.action_export_histogram_image.triggered.connect(
+            lambda: self.handle_export_histogram_image()
+        )
 
         # Edit actions
         self.action_undo = QAction("Undo", parent)
@@ -222,3 +255,169 @@ class CommandActions:
             self._selection_controller.follow_move(res)
         elif res.status == "rejected":
             self._ui.show_error("Change Target Error", "\n".join(res.messages))
+
+    def enable_file_actions(self, enabled: bool = True) -> None:
+        """Enable or disable file and export actions."""
+        self.action_new.setEnabled(enabled)
+        self.action_open.setEnabled(enabled)
+        self.action_save.setEnabled(enabled)
+        self.action_save_as.setEnabled(enabled)
+        self.action_import_qasm.setEnabled(enabled)
+        self.action_export_qasm.setEnabled(enabled)
+        self.action_export_image.setEnabled(enabled)
+        self.action_export_circuit_image.setEnabled(enabled)
+        self.action_export_bloch_image.setEnabled(enabled)
+        self.action_export_histogram_image.setEnabled(enabled)
+
+    def handle_new(self) -> bool:
+        """Create a new circuit, prompting if session is dirty."""
+        success = False
+
+        def action() -> bool:
+            nonlocal success
+            self._adapter.session.new()
+            if self._selection_controller is not None:
+                self._selection_controller.clear_selection()
+            success = True
+            return True
+
+        choice = None
+        if self._adapter.save_status == SaveStatus.DIRTY:
+            choice = self._ui.prompt_save_changes(
+                "Unsaved Changes",
+                "Save changes before creating a new circuit?",
+            )
+        guarded_ok = run_guarded(self._adapter.session, choice, self.handle_save, action)
+        return guarded_ok and success
+
+    def handle_open(self, path: Path | str | None = None) -> bool:
+        """Open a .qcs file, prompting if session is dirty."""
+        success = False
+
+        def action() -> bool:
+            nonlocal success
+            target_path = (
+                Path(path)
+                if path is not None
+                else self._ui.choose_open_file(
+                    "Open Circuit", "OpenQSim Circuit (*.qcs);;All Files (*)"
+                )
+            )
+            if target_path is None:
+                return False
+            outcome = self._adapter.session.open(target_path)
+            if not outcome.ok:
+                self._ui.show_error("Open Error", outcome.message)
+                return False
+            if self._selection_controller is not None:
+                self._selection_controller.clear_selection()
+            success = True
+            return True
+
+        choice = None
+        if self._adapter.save_status == SaveStatus.DIRTY:
+            choice = self._ui.prompt_save_changes(
+                "Unsaved Changes",
+                "Save changes before opening another circuit?",
+            )
+        guarded_ok = run_guarded(self._adapter.session, choice, self.handle_save, action)
+        return guarded_ok and success
+
+    def handle_save(self) -> bool:
+        """Save the session, prompting for path if none is set."""
+        if self._adapter.file_path is None:
+            return self.handle_save_as()
+        outcome = self._adapter.session.save()
+        if not outcome.ok:
+            self._ui.show_error("Save Error", outcome.message)
+            return False
+        return True
+
+    def handle_save_as(self, path: Path | str | None = None) -> bool:
+        """Save session to a specific or user-selected path."""
+        target_path = (
+            Path(path)
+            if path is not None
+            else self._ui.choose_save_file(
+                "Save Circuit As",
+                "OpenQSim Circuit (*.qcs);;All Files (*)",
+                default_name="circuit.qcs",
+            )
+        )
+        if target_path is None:
+            return False
+        outcome = self._adapter.session.save_as(target_path)
+        if not outcome.ok:
+            self._ui.show_error("Save Error", outcome.message)
+            return False
+        return True
+
+    def handle_import_qasm(self, path: Path | str | None = None) -> bool:
+        """Import OpenQASM 2.0 file, prompting if session is dirty."""
+        success = False
+
+        def action() -> bool:
+            nonlocal success
+            target_path = (
+                Path(path)
+                if path is not None
+                else self._ui.choose_open_file(
+                    "Import OpenQASM", "OpenQASM (*.qasm);;All Files (*)"
+                )
+            )
+            if target_path is None:
+                return False
+            outcome = self._adapter.session.import_qasm(target_path)
+            if not outcome.ok:
+                self._ui.show_error("Import Error", outcome.message)
+                return False
+            if self._selection_controller is not None:
+                self._selection_controller.clear_selection()
+            success = True
+            return True
+
+        choice = None
+        if self._adapter.save_status == SaveStatus.DIRTY:
+            choice = self._ui.prompt_save_changes(
+                "Unsaved Changes",
+                "Save changes before importing OpenQASM?",
+            )
+        guarded_ok = run_guarded(self._adapter.session, choice, self.handle_save, action)
+        return guarded_ok and success
+
+    def handle_export_qasm(self, path: Path | str | None = None) -> bool:
+        """Export circuit to OpenQASM 2.0 file."""
+        target_path = (
+            Path(path)
+            if path is not None
+            else self._ui.choose_save_file(
+                "Export OpenQASM",
+                "OpenQASM (*.qasm);;All Files (*)",
+                default_name="circuit.qasm",
+            )
+        )
+        if target_path is None:
+            return False
+        outcome = self._adapter.session.export_qasm(target_path)
+        if not outcome.ok:
+            self._ui.show_error("Export Error", outcome.message)
+            return False
+        return True
+
+    def handle_export_circuit_image(self, path: Path | str | None = None) -> bool:
+        """Export circuit diagram to PNG file."""
+        if self.on_export_circuit_image is not None:
+            return self.on_export_circuit_image(path)
+        return False
+
+    def handle_export_bloch_image(self, path: Path | str | None = None) -> bool:
+        """Export Bloch view to PNG file."""
+        if self.on_export_bloch_image is not None:
+            return self.on_export_bloch_image(path)
+        return False
+
+    def handle_export_histogram_image(self, path: Path | str | None = None) -> bool:
+        """Export histogram view to PNG file."""
+        if self.on_export_histogram_image is not None:
+            return self.on_export_histogram_image(path)
+        return False
