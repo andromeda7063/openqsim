@@ -89,7 +89,7 @@ def test_import_export_import_roundtrip_preserves_semantics() -> None:
     assert np.allclose(sim1.statevector, sim2.statevector, atol=1e-9)
 
 
-@pytest.mark.req("FR-6.3", "FR-6.13", "NFR-5.4")
+@pytest.mark.req("FR-6.3", "FR-6.13", "NFR-5.4", "NFR-7.6")
 def test_qiskit_independent_oracle() -> None:
     import qiskit.qasm2  # type: ignore[import-untyped]
 

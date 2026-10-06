@@ -11,7 +11,7 @@ from libqsim.domain.models import Circuit, GatePlacement
 from libqsim.persistence.qcs import QcsError, dumps, loads, read, write
 
 
-@pytest.mark.req("FR-5.1", "FR-5.2", "FR-5.4", "FR-5.5", "NFR-5.3")
+@pytest.mark.req("FR-5.1", "FR-5.2", "FR-5.3", "FR-5.4", "FR-5.5", "FR-5.6", "NFR-5.3", "NFR-7.5")
 def test_qcs_roundtrip_handbuilt_and_seeded() -> None:
     # Hand-built circuit
     gates = [
@@ -21,6 +21,10 @@ def test_qcs_roundtrip_handbuilt_and_seeded() -> None:
     ]
     c1 = Circuit(3, gates)
     dumped = dumps(c1)
+    assert '"schema_version": "1.0"' in dumped
+    assert "simulation" not in dumped.lower()
+    assert "statevector" not in dumped.lower()
+    assert "probabilities" not in dumped.lower()
     loaded = loads(dumped)
     assert loaded == c1
     assert dumps(loaded) == dumped
