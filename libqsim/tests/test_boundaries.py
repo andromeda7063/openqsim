@@ -20,6 +20,7 @@ SUBPACKAGES = [
 ]
 
 
+@pytest.mark.req("NFR-5.1", "NFR-5.5")
 @pytest.mark.parametrize("subpackage", SUBPACKAGES)
 def test_subpackage_does_not_import_qt(subpackage: str) -> None:
     """Importing each libqsim subpackage in a fresh process must not import Qt."""
@@ -46,6 +47,7 @@ if loaded_forbidden:
     )
 
 
+@pytest.mark.req("NFR-5.1", "NFR-5.5")
 def test_no_qt_references_in_libqsim_src() -> None:
     """libqsim/src must not mention PySide6 or PyQt in any source file."""
     src_dir = Path(__file__).resolve().parents[1] / "src"
