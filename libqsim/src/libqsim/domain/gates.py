@@ -35,18 +35,10 @@ GATE_ARITY: dict[GateType, tuple[int, int]] = {
 _H_MAT: npt.NDArray[np.complex128] = (1.0 / np.sqrt(2.0)) * np.array(
     [[1.0, 1.0], [1.0, -1.0]], dtype=np.complex128
 )
-_X_MAT: npt.NDArray[np.complex128] = np.array(
-    [[0.0, 1.0], [1.0, 0.0]], dtype=np.complex128
-)
-_Y_MAT: npt.NDArray[np.complex128] = np.array(
-    [[0.0, -1.0j], [1.0j, 0.0]], dtype=np.complex128
-)
-_Z_MAT: npt.NDArray[np.complex128] = np.array(
-    [[1.0, 0.0], [0.0, -1.0]], dtype=np.complex128
-)
-_S_MAT: npt.NDArray[np.complex128] = np.array(
-    [[1.0, 0.0], [0.0, 1.0j]], dtype=np.complex128
-)
+_X_MAT: npt.NDArray[np.complex128] = np.array([[0.0, 1.0], [1.0, 0.0]], dtype=np.complex128)
+_Y_MAT: npt.NDArray[np.complex128] = np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=np.complex128)
+_Z_MAT: npt.NDArray[np.complex128] = np.array([[1.0, 0.0], [0.0, -1.0]], dtype=np.complex128)
+_S_MAT: npt.NDArray[np.complex128] = np.array([[1.0, 0.0], [0.0, 1.0j]], dtype=np.complex128)
 _T_MAT: npt.NDArray[np.complex128] = np.array(
     [[1.0, 0.0], [0.0, np.exp(1.0j * np.pi / 4.0)]], dtype=np.complex128
 )

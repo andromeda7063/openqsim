@@ -106,13 +106,13 @@ def test_canonical_placements_deterministic_hand_checked_ordering() -> None:
     )
 
     expected = (
-        p_h0,     # col 0, lowest 0, gate "H" < "Z"
-        p_z0,     # col 0, lowest 0, gate "Z"
-        p_x1,     # col 0, lowest 1
-        p_toff,   # col 1, lowest 0
+        p_h0,  # col 0, lowest 0, gate "H" < "Z"
+        p_z0,  # col 0, lowest 0, gate "Z"
+        p_x1,  # col 0, lowest 1
+        p_toff,  # col 1, lowest 0
         p_cnot1,  # col 2, lowest 0
         p_cnot2,  # col 2, lowest 1
-        p_meas,   # col 5, lowest 1
+        p_meas,  # col 5, lowest 1
     )
 
     assert circuit.canonical_placements() == expected
