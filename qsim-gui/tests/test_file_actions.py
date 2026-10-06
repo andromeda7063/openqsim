@@ -131,10 +131,13 @@ def test_failed_open_keeps_old_circuit_and_history(qapp: QApplication, tmp_path:
     ui = StubUserInterface()
     window = MainWindow(adapter=adapter, ui=ui)
 
-    # Establish initial circuit with history
+    # Establish initial circuit with history and clean baseline
     adapter.apply(place_gate(session.circuit, GateType.H, qubit=0, column=0))
+    init_path = tmp_path / "init.qcs"
+    adapter.session.save_as(init_path)
     assert len(adapter.circuit.placements) == 1
     assert adapter.can_undo is True
+    assert adapter.save_status == SaveStatus.CLEAN
 
     # 1. Attempt to open a non-existent file
     non_existent = tmp_path / "does_not_exist.qcs"
