@@ -18,7 +18,7 @@ class SessionAdapter(QObject):
     def __init__(self, session: EditorSession) -> None:
         super().__init__()
         self._session = session
-        self._unsubscribe: Callable[[], None] | None = None
+        self._unsubscribe: Callable[[], None] | None = self._session.subscribe(self.changed.emit)
 
     @property
     def session(self) -> EditorSession:
@@ -57,22 +57,25 @@ class SessionAdapter(QObject):
         return self._session.can_redo
 
     def apply(self, result: OperationResult) -> bool:
-        raise NotImplementedError
+        return self._session.apply(result)
 
     def undo(self) -> bool:
-        raise NotImplementedError
+        return self._session.undo()
 
     def redo(self) -> bool:
-        raise NotImplementedError
+        return self._session.redo()
 
     def run(
         self,
         simulate_fn: Callable[[Circuit], SimulationResult] | None = None,
     ) -> RunOutcome:
-        raise NotImplementedError
+        return self._session.run(simulate_fn=simulate_fn)
 
     def new(self) -> None:
-        raise NotImplementedError
+        self._session.new()
 
     def detach(self) -> None:
-        raise NotImplementedError
+        """Detach from session updates."""
+        if self._unsubscribe is not None:
+            self._unsubscribe()
+            self._unsubscribe = None

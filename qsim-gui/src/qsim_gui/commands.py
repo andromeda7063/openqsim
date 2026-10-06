@@ -50,11 +50,13 @@ class CommandActions:
         # Edit actions
         self.action_undo = QAction("Undo", parent)
         self.action_undo.setShortcut(QKeySequence("Ctrl+Z"))
-        self.action_undo.setEnabled(False)
+        self.action_undo.setEnabled(self._adapter.can_undo)
+        self.action_undo.triggered.connect(self._handle_undo)
 
         self.action_redo = QAction("Redo", parent)
         self.action_redo.setShortcut(QKeySequence("Ctrl+Y"))
-        self.action_redo.setEnabled(False)
+        self.action_redo.setEnabled(self._adapter.can_redo)
+        self.action_redo.triggered.connect(self._handle_redo)
 
         self.action_copy = QAction("Copy", parent)
         self.action_copy.setShortcut(QKeySequence("Ctrl+C"))
@@ -75,6 +77,27 @@ class CommandActions:
         # Simulate actions
         self.action_run = QAction("Run", parent)
         self.action_run.setEnabled(True)
+        self.action_run.triggered.connect(self._handle_run)
+
+        # Connect adapter changes to action update
+        self._adapter.changed.connect(self.update_actions)
 
     def update_actions(self) -> None:
-        raise NotImplementedError
+        """Update action enabled states from session adapter state."""
+        self.action_undo.setEnabled(self._adapter.can_undo)
+        self.action_redo.setEnabled(self._adapter.can_redo)
+        self.action_run.setEnabled(True)
+
+    def _handle_undo(self) -> None:
+        self._adapter.undo()
+
+    def _handle_redo(self) -> None:
+        self._adapter.redo()
+
+    def _handle_run(self) -> None:
+        outcome = self._adapter.run()
+        if not outcome.ok:
+            error_text = (
+                "\n".join(outcome.messages) if outcome.messages else "Simulation execution failed."
+            )
+            self._ui.show_error("Simulation Error", error_text)

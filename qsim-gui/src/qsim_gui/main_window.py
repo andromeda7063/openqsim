@@ -1,8 +1,14 @@
 """Main window of the OpenQSim application."""
 
-from libqsim.application.session import EditorSession
+from libqsim.application.session import EditorSession, SaveStatus, SimulationStatus
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
     QMainWindow,
+    QMenu,
+    QStatusBar,
+    QToolBar,
     QWidget,
 )
 
@@ -27,6 +33,10 @@ class MainWindow(QMainWindow):
         self._ui = ui if ui is not None else QtUserInterface(self)
         self._commands = CommandActions(self, self._adapter, self._ui)
 
+        self._setup_ui()
+        self._adapter.changed.connect(self._on_session_changed)
+        self._on_session_changed()
+
     @property
     def adapter(self) -> SessionAdapter:
         return self._adapter
@@ -38,3 +48,134 @@ class MainWindow(QMainWindow):
     @property
     def ui(self) -> UserInterface:
         return self._ui
+
+    def _setup_ui(self) -> None:
+        self._setup_menus()
+        self._setup_toolbar()
+        self._setup_central_regions()
+        self._setup_status_bar()
+        self.resize(1920, 1080)
+
+    def _setup_menus(self) -> None:
+        menubar = self.menuBar()
+
+        # File menu
+        file_menu = menubar.addMenu("&File")
+        file_menu.addAction(self._commands.action_new)
+        file_menu.addAction(self._commands.action_open)
+        file_menu.addAction(self._commands.action_save)
+        file_menu.addAction(self._commands.action_save_as)
+        file_menu.addSeparator()
+        file_menu.addAction(self._commands.action_import_qasm)
+        file_menu.addAction(self._commands.action_export_qasm)
+        file_menu.addAction(self._commands.action_export_image)
+
+        # Edit menu
+        edit_menu = menubar.addMenu("&Edit")
+        edit_menu.addAction(self._commands.action_undo)
+        edit_menu.addAction(self._commands.action_redo)
+        edit_menu.addSeparator()
+        edit_menu.addAction(self._commands.action_copy)
+        edit_menu.addAction(self._commands.action_paste)
+        edit_menu.addAction(self._commands.action_delete)
+        edit_menu.addAction(self._commands.action_select_all)
+
+        # Simulate menu
+        simulate_menu = menubar.addMenu("&Simulate")
+        simulate_menu.addAction(self._commands.action_run)
+
+        # Help menu placeholder
+        self._help_menu: QMenu = menubar.addMenu("&Help")
+
+    def _setup_toolbar(self) -> None:
+        toolbar = QToolBar("Main Toolbar", self)
+        toolbar.setObjectName("main_toolbar")
+        self.addToolBar(toolbar)
+
+        toolbar.addAction(self._commands.action_new)
+        toolbar.addAction(self._commands.action_open)
+        toolbar.addAction(self._commands.action_save)
+        toolbar.addAction(self._commands.action_save_as)
+        toolbar.addSeparator()
+        toolbar.addAction(self._commands.action_undo)
+        toolbar.addAction(self._commands.action_redo)
+        toolbar.addSeparator()
+        toolbar.addAction(self._commands.action_run)
+        toolbar.addSeparator()
+        toolbar.addAction(self._commands.action_export_qasm)
+        toolbar.addAction(self._commands.action_export_image)
+
+    def _setup_central_regions(self) -> None:
+        central_widget = QWidget(self)
+        central_widget.setObjectName("central_widget")
+        self.setCentralWidget(central_widget)
+
+        layout = QHBoxLayout(central_widget)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(6)
+
+        # Three regions as labelled placeholders
+        self._palette_placeholder = QLabel("Palette", self)
+        self._palette_placeholder.setObjectName("palette_region")
+        self._palette_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self._canvas_placeholder = QLabel("Canvas", self)
+        self._canvas_placeholder.setObjectName("canvas_region")
+        self._canvas_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self._results_placeholder = QLabel("Results", self)
+        self._results_placeholder.setObjectName("results_region")
+        self._results_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        layout.addWidget(self._palette_placeholder, 1)
+        layout.addWidget(self._canvas_placeholder, 4)
+        layout.addWidget(self._results_placeholder, 3)
+
+    def _setup_status_bar(self) -> None:
+        status_bar = QStatusBar(self)
+        status_bar.setObjectName("status_bar")
+        self.setStatusBar(status_bar)
+
+        self._save_status_label = QLabel("Save: Clean", self)
+        self._save_status_label.setObjectName("save_status_label")
+
+        self._sim_status_label = QLabel("Simulation: None", self)
+        self._sim_status_label.setObjectName("sim_status_label")
+
+        status_bar.addPermanentWidget(self._save_status_label)
+        status_bar.addPermanentWidget(self._sim_status_label)
+
+    def _on_session_changed(self) -> None:
+        # Window title
+        file_name = (
+            self._adapter.file_path.name if self._adapter.file_path is not None else "Untitled"
+        )
+        self.setWindowTitle(f"{file_name} [*] - OpenQSim")
+        self.setWindowModified(self._adapter.save_status == SaveStatus.DIRTY)
+
+        # Save status indicator
+        if self._adapter.save_status == SaveStatus.DIRTY:
+            self._save_status_label.setText("Save: Dirty")
+            self._save_status_label.setStyleSheet(
+                "color: #c96000; font-weight: bold; padding: 2px 6px;"
+            )
+        else:
+            self._save_status_label.setText("Save: Clean")
+            self._save_status_label.setStyleSheet("color: inherit; padding: 2px 6px;")
+
+        # Simulation status indicator
+        sim_status = self._adapter.simulation_status
+        if sim_status == SimulationStatus.STALE:
+            self._sim_status_label.setText("Simulation: Stale")
+            self._sim_status_label.setStyleSheet(
+                "color: #990000; font-weight: bold; background-color: #ffd6d6; "
+                "border: 1px solid #cc0000; border-radius: 3px; padding: 2px 6px;"
+            )
+        elif sim_status == SimulationStatus.CURRENT:
+            self._sim_status_label.setText("Simulation: Current")
+            self._sim_status_label.setStyleSheet(
+                "color: #007700; font-weight: bold; padding: 2px 6px;"
+            )
+        else:
+            self._sim_status_label.setText("Simulation: None")
+            self._sim_status_label.setStyleSheet("color: inherit; padding: 2px 6px;")
