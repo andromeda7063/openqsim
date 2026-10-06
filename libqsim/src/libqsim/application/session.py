@@ -9,6 +9,7 @@ from libqsim.application.history import History
 from libqsim.application.operations import OperationResult
 from libqsim.domain.models import Circuit
 from libqsim.domain.validation import validate
+from libqsim.persistence.qcs import QcsError, read, write
 from libqsim.simulation.engine import (
     InvalidCircuitError,
     SimulationError,
@@ -217,15 +218,29 @@ class EditorSession:
 
     def save(self) -> IoOutcome:
         """Save the session to its current file path."""
-        raise NotImplementedError
+        if self._file_path is None:
+            return IoOutcome(ok=False, message="No file path specified", needs_path=True)
+        return self.save_as(self._file_path)
 
     def save_as(self, path: Path | str) -> IoOutcome:
         """Save the session to the specified file path."""
-        raise NotImplementedError
+        target_path = Path(path)
+        try:
+            write(target_path, self._circuit)
+        except QcsError as exc:
+            return IoOutcome(ok=False, message=str(exc))
+        self.mark_saved(target_path)
+        return IoOutcome(ok=True)
 
     def open(self, path: Path | str) -> IoOutcome:
         """Open a QCS file and establish it as the session circuit."""
-        raise NotImplementedError
+        target_path = Path(path)
+        try:
+            loaded_circuit = read(target_path)
+        except QcsError as exc:
+            return IoOutcome(ok=False, message=str(exc))
+        self.establish_loaded(loaded_circuit, target_path)
+        return IoOutcome(ok=True)
 
     def subscribe(self, callback: Callable[[], None]) -> Callable[[], None]:
         """Subscribe to session state changes. Returns an unsubscribe callable."""
