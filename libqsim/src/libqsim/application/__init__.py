@@ -25,6 +25,7 @@ from libqsim.application.selection import (
 )
 from libqsim.application.session import (
     EditorSession,
+    IoOutcome,
     RunOutcome,
     SaveStatus,
     SimulationStatus,
@@ -34,6 +35,7 @@ __all__ = [
     "Clipboard",
     "EditorSession",
     "History",
+    "IoOutcome",
     "OperationResult",
     "ResizePlan",
     "RunOutcome",

@@ -20,6 +20,7 @@ from libqsim.simulation.results import SimulationResult
 
 __all__ = [
     "EditorSession",
+    "IoOutcome",
     "RunOutcome",
     "SaveStatus",
     "SimulationStatus",
@@ -47,6 +48,15 @@ class RunOutcome:
 
     ok: bool
     messages: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class IoOutcome:
+    """Outcome of an IO operation (open, save, save_as)."""
+
+    ok: bool
+    message: str = ""
+    needs_path: bool = False
 
 
 class EditorSession:
@@ -204,6 +214,18 @@ class EditorSession:
         if path is not None:
             self._file_path = path
         self._notify()
+
+    def save(self) -> IoOutcome:
+        """Save the session to its current file path."""
+        raise NotImplementedError
+
+    def save_as(self, path: Path | str) -> IoOutcome:
+        """Save the session to the specified file path."""
+        raise NotImplementedError
+
+    def open(self, path: Path | str) -> IoOutcome:
+        """Open a QCS file and establish it as the session circuit."""
+        raise NotImplementedError
 
     def subscribe(self, callback: Callable[[], None]) -> Callable[[], None]:
         """Subscribe to session state changes. Returns an unsubscribe callable."""
