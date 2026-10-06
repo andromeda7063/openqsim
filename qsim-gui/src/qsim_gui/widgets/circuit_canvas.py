@@ -1,8 +1,9 @@
 """Scrollable read-only circuit canvas widget with drag-and-drop placement."""
 
-from libqsim.application.operations import OperationResult, place_gate
+from libqsim.application.operations import OperationResult, delete_gates, place_gate
+from libqsim.application.selection import gate_at
 from libqsim.application.session import EditorSession
-from libqsim.domain.models import GateType
+from libqsim.domain.models import GatePlacement, GateType
 from PySide6.QtCore import QMimeData, QPoint, QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import (
     QColor,
@@ -11,6 +12,8 @@ from PySide6.QtGui import (
     QDragMoveEvent,
     QDropEvent,
     QFont,
+    QKeyEvent,
+    QMouseEvent,
     QPainter,
     QPainterPath,
     QPalette,
@@ -21,6 +24,7 @@ from qsim_gui.dialogs import UserInterface
 from qsim_gui.state import SessionAdapter
 from qsim_gui.widgets.gate_palette import decode_gate_mime
 from qsim_gui.widgets.grid import GridGeometry
+from qsim_gui.widgets.selection_controller import SelectionController
 
 
 def handle_drop(
@@ -44,6 +48,7 @@ class CircuitCanvas(QWidget):
         adapter: SessionAdapter,
         geometry: GridGeometry | None = None,
         ui: UserInterface | None = None,
+        controller: SelectionController | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -52,11 +57,20 @@ class CircuitCanvas(QWidget):
             geometry if geometry is not None else GridGeometry(cell_width=48, cell_height=48)
         )
         self._ui = ui
+        self._controller = controller if controller is not None else SelectionController()
+        self._controller.subscribe(self.update)
         self._drag_cells: list[tuple[int, int]] = []
+        self._marquee_pixel_start: QPoint | None = None
+        self._marquee_pixel_current: QPoint | None = None
         self.setAcceptDrops(True)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         self._update_dimensions()
         self._adapter.changed.connect(self._on_session_changed)
+
+    @property
+    def selection_controller(self) -> SelectionController:
+        return self._controller
 
     @property
     def grid_geometry(self) -> GridGeometry:
@@ -74,6 +88,7 @@ class CircuitCanvas(QWidget):
         return QSize(w, h)
 
     def _on_session_changed(self) -> None:
+        self._controller.prune(self._adapter.circuit)
         self._update_dimensions()
         self.update()
 
@@ -138,6 +153,80 @@ class CircuitCanvas(QWidget):
         if self._drag_cells != cells:
             self._drag_cells = cells
             self.update()
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        self.setFocus()
+        if event.button() == Qt.MouseButton.LeftButton:
+            pt = event.position().toPoint()
+            cell = self._geo.point_to_cell(
+                pt.x(), pt.y(), num_qubits=self._adapter.circuit.num_qubits, num_columns=50
+            )
+            ctrl = bool(
+                event.modifiers()
+                & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier)
+            )
+            if cell is not None:
+                hit = gate_at(self._adapter.circuit, cell[0], cell[1])
+                if hit is not None:
+                    self._controller.press_gate(hit, cell, ctrl=ctrl)
+                else:
+                    self._controller.press_empty(cell, ctrl=ctrl)
+                    self._controller.marquee_begin(cell, ctrl=ctrl)
+                    self._marquee_pixel_start = pt
+                    self._marquee_pixel_current = pt
+            else:
+                self._controller.press_empty((0, 0), ctrl=ctrl)
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if self._controller.is_marquee_active and self._marquee_pixel_start is not None:
+            self._marquee_pixel_current = event.position().toPoint()
+            cells = self._geo.rect_to_cells(
+                self._marquee_pixel_start.x(),
+                self._marquee_pixel_start.y(),
+                self._marquee_pixel_current.x(),
+                self._marquee_pixel_current.y(),
+                num_qubits=self._adapter.circuit.num_qubits,
+                num_columns=50,
+            )
+            if cells:
+                q_min = min(c[0] for c in cells)
+                q_max = max(c[0] for c in cells)
+                c_min = min(c[1] for c in cells)
+                c_max = max(c[1] for c in cells)
+                self._controller.marquee_update_rect(
+                    self._adapter.circuit, q_min, q_max, c_min, c_max
+                )
+            self.update()
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if self._controller.is_marquee_active:
+            self._controller.marquee_end(self._adapter.circuit)
+            self._marquee_pixel_start = None
+            self._marquee_pixel_current = None
+            self.update()
+        super().mouseReleaseEvent(event)
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() in (Qt.Key.Key_Delete, Qt.Key.Key_Backspace):
+            if self._controller.selection:
+                res = delete_gates(self._adapter.circuit, self._controller.selection)
+                if res.status == "applied":
+                    self._adapter.apply(res)
+                    self._controller.clear_selection()
+                elif res.status == "rejected" and self._ui is not None:
+                    self._ui.show_error("Delete Error", "\n".join(res.messages))
+            event.accept()
+            return
+        if event.key() == Qt.Key.Key_A and bool(
+            event.modifiers()
+            & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier)
+        ):
+            self._controller.select_all(self._adapter.circuit)
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def paintEvent(self, event) -> None:  # type: ignore[no-untyped-def]
         painter = QPainter(self)
@@ -222,19 +311,45 @@ class CircuitCanvas(QWidget):
         # 3. Draw gate placements
         circuit = self._adapter.circuit
         for p in circuit.placements:
+            is_selected = p in self._controller.selection
             if p.gate_type in (GateType.CNOT, GateType.Toffoli):
-                self._draw_multi_qubit_gate(painter, p, window_text, box_bg)
+                self._draw_multi_qubit_gate(
+                    painter, p, window_text, box_bg, is_selected=is_selected
+                )
             elif p.gate_type == GateType.Measurement:
-                self._draw_measurement(painter, p.targets[0], p.column, window_text, box_bg)
+                self._draw_measurement(
+                    painter, p.targets[0], p.column, window_text, box_bg, is_selected=is_selected
+                )
             else:
-                self._draw_single_qubit_gate(painter, p, window_text, box_bg)
+                self._draw_single_qubit_gate(
+                    painter, p, window_text, box_bg, is_selected=is_selected
+                )
+
+        # 4. Draw marquee rectangle if active
+        if (
+            self._controller.is_marquee_active
+            and self._marquee_pixel_start is not None
+            and self._marquee_pixel_current is not None
+        ):
+            x0 = min(self._marquee_pixel_start.x(), self._marquee_pixel_current.x())
+            y0 = min(self._marquee_pixel_start.y(), self._marquee_pixel_current.y())
+            w = abs(self._marquee_pixel_start.x() - self._marquee_pixel_current.x())
+            h = abs(self._marquee_pixel_start.y() - self._marquee_pixel_current.y())
+            marquee_rect = QRectF(x0, y0, w, h)
+            highlight_color = pal.color(QPalette.ColorRole.Highlight)
+            fill_color = QColor(highlight_color)
+            fill_color.setAlpha(40)
+            painter.setPen(QPen(highlight_color, 1.5, Qt.PenStyle.DashLine))
+            painter.setBrush(fill_color)
+            painter.drawRect(marquee_rect)
 
     def _draw_single_qubit_gate(
         self,
         painter: QPainter,
-        placement,
+        placement: GatePlacement,
         text_color: QColor,
-        box_bg: QColor,  # type: ignore[no-untyped-def]
+        box_bg: QColor,
+        is_selected: bool = False,
     ) -> None:
         q = placement.targets[0]
         c = placement.column
@@ -247,6 +362,13 @@ class CircuitCanvas(QWidget):
         painter.setBrush(box_bg)
         painter.drawRoundedRect(rect, 4, 4)
 
+        if is_selected:
+            highlight_color = self.palette().color(QPalette.ColorRole.Highlight)
+            sel_rect = rect.adjusted(-3, -3, 3, 3)
+            painter.setPen(QPen(highlight_color, 2.5))
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawRoundedRect(sel_rect, 6, 6)
+
         # Gate label
         gate_font = QFont(self.font())
         gate_font.setBold(True)
@@ -258,9 +380,10 @@ class CircuitCanvas(QWidget):
     def _draw_multi_qubit_gate(
         self,
         painter: QPainter,
-        placement,
+        placement: GatePlacement,
         line_color: QColor,
-        box_bg: QColor,  # type: ignore[no-untyped-def]
+        box_bg: QColor,
+        is_selected: bool = False,
     ) -> None:
         all_qubits = list(placement.controls) + list(placement.targets)
         min_q = min(all_qubits)
@@ -269,6 +392,19 @@ class CircuitCanvas(QWidget):
 
         cx, min_cy = self._geo.cell_center(min_q, c)
         _, max_cy = self._geo.cell_center(max_q, c)
+
+        if is_selected:
+            highlight_color = self.palette().color(QPalette.ColorRole.Highlight)
+            hx, hy, hw, _ = self._geo.cell_to_rect(min_q, c)
+            _, bottom_hy, _, bottom_hh = self._geo.cell_to_rect(max_q, c)
+            total_h = (bottom_hy + bottom_hh) - hy
+            sel_rect = QRectF(hx + 4, hy + 4, hw - 8, total_h - 8)
+            fill = QColor(highlight_color)
+            fill.setAlpha(40)
+            painter.setPen(QPen(highlight_color, 2.0, Qt.PenStyle.DashLine))
+            painter.setBrush(fill)
+            painter.drawRoundedRect(sel_rect, 6, 6)
+            line_color = highlight_color
 
         # Vertical connector line through all occupied wires
         painter.setPen(QPen(line_color, 2.0))
@@ -296,7 +432,13 @@ class CircuitCanvas(QWidget):
             painter.drawLine(cx, cy - tgt_radius, cx, cy + tgt_radius)
 
     def _draw_measurement(
-        self, painter: QPainter, q: int, c: int, stroke_color: QColor, box_bg: QColor
+        self,
+        painter: QPainter,
+        q: int,
+        c: int,
+        stroke_color: QColor,
+        box_bg: QColor,
+        is_selected: bool = False,
     ) -> None:
         cx, cy = self._geo.cell_center(q, c)
         size = 34
@@ -306,6 +448,13 @@ class CircuitCanvas(QWidget):
         painter.setPen(QPen(stroke_color, 1.5))
         painter.setBrush(box_bg)
         painter.drawRoundedRect(rect, 4, 4)
+
+        if is_selected:
+            highlight_color = self.palette().color(QPalette.ColorRole.Highlight)
+            sel_rect = rect.adjusted(-3, -3, 3, 3)
+            painter.setPen(QPen(highlight_color, 2.5))
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawRoundedRect(sel_rect, 6, 6)
 
         # Dial arc
         arc_rect = QRectF(cx - 11, cy - 8, 22, 16)

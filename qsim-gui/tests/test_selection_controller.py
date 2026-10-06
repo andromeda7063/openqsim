@@ -270,3 +270,148 @@ def test_delete_and_select_all_shortcuts(qapp: QApplication) -> None:
     shortcuts = [s.toString() for s in commands.action_delete.shortcuts()]
     assert "Del" in shortcuts or "Delete" in shortcuts
     assert "Backspace" in shortcuts or "BkSp" in shortcuts
+
+
+@pytest.mark.req("FR-1.10", "FR-1.45")
+def test_clear_action(qapp: QApplication) -> None:
+    session = EditorSession()
+    adapter = SessionAdapter(session)
+    ui = StubUserInterface()
+    widget = QWidget()
+    ctrl = SelectionController()
+    commands = CommandActions(widget, adapter, ui, selection_controller=ctrl)
+
+    # Empty circuit: clear is disabled
+    assert commands.action_clear.isEnabled() is False
+
+    # Add gate: clear is enabled
+    adapter.apply(place_gate(session.circuit, GateType.H, qubit=0, column=0))
+    assert commands.action_clear.isEnabled() is True
+    assert len(adapter.circuit.placements) == 1
+
+    # Select gate, then clear
+    ctrl.click_cell(adapter.circuit, (0, 0))
+    assert len(ctrl.selection) == 1
+
+    commands.action_clear.trigger()
+    assert len(adapter.circuit.placements) == 0
+    assert len(ctrl.selection) == 0
+    assert commands.action_clear.isEnabled() is False
+
+
+@pytest.mark.req("FR-1.21", "NFR-2.6")
+def test_canvas_mouse_click_and_focus(qapp: QApplication) -> None:
+    from PySide6.QtCore import QPointF, Qt
+    from PySide6.QtGui import QMouseEvent
+    from qsim_gui.widgets.circuit_canvas import CircuitCanvas
+
+    session = EditorSession()
+    adapter = SessionAdapter(session)
+    adapter.apply(place_gate(session.circuit, GateType.H, qubit=0, column=1))
+    canvas = CircuitCanvas(adapter=adapter)
+    canvas.show()
+
+    h_gate = adapter.circuit.placements[0]
+    cx, cy = canvas.grid_geometry.cell_center(0, 1)
+
+    # Simulate mouse press on gate
+    press_event = QMouseEvent(
+        QMouseEvent.Type.MouseButtonPress,
+        QPointF(cx, cy),
+        QPointF(cx, cy),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    canvas.mousePressEvent(press_event)
+    qapp.processEvents()
+
+    assert canvas.selection_controller.selection == frozenset({h_gate})
+    assert canvas.focusPolicy() == Qt.FocusPolicy.StrongFocus
+    assert canvas.hasFocus() is True
+
+
+@pytest.mark.req("FR-1.20", "NFR-2.6")
+def test_canvas_marquee_drag(qapp: QApplication) -> None:
+    from PySide6.QtCore import QPointF, Qt
+    from PySide6.QtGui import QMouseEvent
+    from qsim_gui.widgets.circuit_canvas import CircuitCanvas
+
+    session = EditorSession()
+    adapter = SessionAdapter(session)
+    adapter.apply(place_gate(session.circuit, GateType.H, qubit=0, column=1))
+    adapter.apply(place_gate(session.circuit, GateType.X, qubit=1, column=2))
+    canvas = CircuitCanvas(adapter=adapter)
+
+    # Start marquee on empty cell (0, 0)
+    x0, y0 = canvas.grid_geometry.cell_center(0, 0)
+    press_event = QMouseEvent(
+        QMouseEvent.Type.MouseButtonPress,
+        QPointF(x0, y0),
+        QPointF(x0, y0),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    canvas.mousePressEvent(press_event)
+    assert canvas.selection_controller.is_marquee_active is True
+
+    # Drag to cell (1, 3)
+    x1, y1 = canvas.grid_geometry.cell_center(1, 3)
+    move_event = QMouseEvent(
+        QMouseEvent.Type.MouseMove,
+        QPointF(x1, y1),
+        QPointF(x1, y1),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    canvas.mouseMoveEvent(move_event)
+
+    # Both gates must be selected
+    assert len(canvas.selection_controller.selection) == 2
+
+    # Release
+    release_event = QMouseEvent(
+        QMouseEvent.Type.MouseButtonRelease,
+        QPointF(x1, y1),
+        QPointF(x1, y1),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    canvas.mouseReleaseEvent(release_event)
+    assert canvas.selection_controller.is_marquee_active is False
+    assert len(canvas.selection_controller.selection) == 2
+
+
+@pytest.mark.req("FR-1.35", "FR-1.36")
+def test_canvas_keyboard_delete_and_select_all(qapp: QApplication) -> None:
+    from PySide6.QtCore import Qt
+    from PySide6.QtGui import QKeyEvent
+    from qsim_gui.widgets.circuit_canvas import CircuitCanvas
+
+    session = EditorSession()
+    adapter = SessionAdapter(session)
+    adapter.apply(place_gate(session.circuit, GateType.H, qubit=0, column=0))
+    adapter.apply(place_gate(session.circuit, GateType.X, qubit=1, column=1))
+    canvas = CircuitCanvas(adapter=adapter)
+
+    # Press Ctrl+A
+    select_all_event = QKeyEvent(
+        QKeyEvent.Type.KeyPress,
+        Qt.Key.Key_A,
+        Qt.KeyboardModifier.ControlModifier,
+    )
+    canvas.keyPressEvent(select_all_event)
+    assert len(canvas.selection_controller.selection) == 2
+
+    # Press Delete
+    del_event = QKeyEvent(
+        QKeyEvent.Type.KeyPress,
+        Qt.Key.Key_Delete,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    canvas.keyPressEvent(del_event)
+    assert len(adapter.circuit.placements) == 0
+    assert len(canvas.selection_controller.selection) == 0
