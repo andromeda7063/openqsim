@@ -20,7 +20,10 @@ def gate_at(
     column: int,
 ) -> GatePlacement | None:
     """Return the gate occupying (qubit, column), or None if empty."""
-    raise NotImplementedError
+    for p in circuit.placements:
+        if p.column == column and qubit in p.occupied_qubits:
+            return p
+    return None
 
 
 def gates_in_rect(
@@ -31,14 +34,21 @@ def gates_in_rect(
     c_max: int,
 ) -> frozenset[GatePlacement]:
     """Return all whole gate placements that intersect the given (qubit, column) rectangle."""
-    raise NotImplementedError
+    min_q, max_q = min(q_min, q_max), max(q_min, q_max)
+    min_c, max_c = min(c_min, c_max), max(c_min, c_max)
+
+    matches: list[GatePlacement] = []
+    for p in circuit.placements:
+        if min_c <= p.column <= max_c and any(min_q <= q <= max_q for q in p.occupied_qubits):
+            matches.append(p)
+    return frozenset(matches)
 
 
 def select_all(
     circuit: Circuit,
 ) -> frozenset[GatePlacement]:
     """Return a selection containing all gate placements in the circuit."""
-    raise NotImplementedError
+    return frozenset(circuit.placements)
 
 
 def click_selection(
@@ -47,7 +57,15 @@ def click_selection(
     ctrl: bool = False,
 ) -> frozenset[GatePlacement]:
     """Compute the new selection resulting from a mouse click on hit (or empty space)."""
-    raise NotImplementedError
+    if hit is None:
+        return current if ctrl else frozenset()
+
+    if not ctrl:
+        return frozenset({hit})
+
+    if hit in current:
+        return current - {hit}
+    return current | {hit}
 
 
 def marquee_selection(
@@ -56,7 +74,10 @@ def marquee_selection(
     ctrl: bool = False,
 ) -> frozenset[GatePlacement]:
     """Compute the new selection resulting from a marquee rectangle selection."""
-    raise NotImplementedError
+    rect_set = frozenset(rect_gates)
+    if not ctrl:
+        return rect_set
+    return current ^ rect_set
 
 
 def prune_selection(
@@ -64,4 +85,4 @@ def prune_selection(
     selection: frozenset[GatePlacement],
 ) -> frozenset[GatePlacement]:
     """Prune any placements from selection that are no longer in the circuit."""
-    raise NotImplementedError
+    return frozenset(p for p in selection if p in circuit.placements)
