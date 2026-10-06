@@ -2,6 +2,7 @@
 
 import random
 
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from libqsim.domain.gates import GateType
@@ -13,12 +14,14 @@ from libqsim.domain.validation import ValidationError, ValidationErrorCode, vali
 # ==============================================================================
 
 
+@pytest.mark.req("FR-2.1")
 def test_valid_empty_circuit() -> None:
     """An empty circuit with 2 qubits has no validation errors."""
     circuit = Circuit(num_qubits=2)
     assert validate(circuit) == []
 
 
+@pytest.mark.req("FR-2.1", "FR-2.4")
 def test_valid_single_h() -> None:
     """A single H gate on a 1-qubit circuit at column 0 is valid."""
     p = GatePlacement(GateType.H, targets=[0], controls=[], column=0)
@@ -26,6 +29,7 @@ def test_valid_single_h() -> None:
     assert validate(circuit) == []
 
 
+@pytest.mark.req("FR-2.1", "FR-2.5", "FR-2.6")
 def test_valid_bell_circuit() -> None:
     """A standard Bell-state circuit (H then CNOT) is valid."""
     h = GatePlacement(GateType.H, targets=[0], controls=[], column=0)
@@ -34,6 +38,7 @@ def test_valid_bell_circuit() -> None:
     assert validate(circuit) == []
 
 
+@pytest.mark.req("FR-2.1", "FR-2.2", "FR-2.4")
 def test_valid_full_grid_h() -> None:
     """A full 10-qubit x 50-column circuit filled with H gates is valid."""
     placements = [
@@ -45,6 +50,7 @@ def test_valid_full_grid_h() -> None:
     assert validate(circuit) == []
 
 
+@pytest.mark.req("FR-2.5", "FR-2.6")
 def test_valid_cnot_targets() -> None:
     """CNOT with target on top wire and on bottom wire are both valid."""
     # Control 1, target 0 (target on top wire)
@@ -55,6 +61,7 @@ def test_valid_cnot_targets() -> None:
     assert validate(circuit) == []
 
 
+@pytest.mark.req("FR-2.5", "FR-2.6")
 def test_valid_toffoli_targets() -> None:
     """Toffoli with target on top, middle, and bottom wire are all valid."""
     # Target on top wire (0), controls on 1 and 2
@@ -74,6 +81,7 @@ def test_valid_toffoli_targets() -> None:
 # ==============================================================================
 
 
+@pytest.mark.req("FR-2.1")
 def test_invalid_num_qubits_zero_and_eleven() -> None:
     """Circuit size < 1 or > 10 produces CIRCUIT_SIZE_OUT_OF_RANGE."""
     c0 = Circuit(num_qubits=0)
@@ -92,6 +100,7 @@ def test_invalid_num_qubits_zero_and_eleven() -> None:
     assert isinstance(errs11[0].message, str) and len(errs11[0].message.strip()) > 0
 
 
+@pytest.mark.req("FR-2.2")
 def test_invalid_column_bounds() -> None:
     """Column indices -1 and 50 produce COLUMN_OUT_OF_RANGE."""
     p_neg = GatePlacement(GateType.H, targets=[0], controls=[], column=-1)
@@ -111,6 +120,7 @@ def test_invalid_column_bounds() -> None:
     assert isinstance(errs_50[0].message, str) and len(errs_50[0].message.strip()) > 0
 
 
+@pytest.mark.req("FR-2.3")
 def test_invalid_qubit_bounds() -> None:
     """Qubit index -1 and n produce QUBIT_INDEX_OUT_OF_RANGE."""
     # Target qubit -1
@@ -148,6 +158,7 @@ def test_invalid_qubit_bounds() -> None:
     assert errs4[0].offending_placement == p_n_ctrl
 
 
+@pytest.mark.req("FR-2.4")
 def test_invalid_gate_arity() -> None:
     """Wrong arity for each gate family produces INVALID_GATE_ARITY."""
     # Single-qubit gate with 0 targets
@@ -187,6 +198,7 @@ def test_invalid_gate_arity() -> None:
     assert errs_meas[0].offending_placement == p_meas_ctrl
 
 
+@pytest.mark.req("FR-2.5")
 def test_invalid_duplicate_qubit_in_placement() -> None:
     """Duplicate qubit references within one placement produce DUPLICATE_QUBIT_REFERENCE."""
     # Target and control on the same wire
@@ -205,6 +217,7 @@ def test_invalid_duplicate_qubit_in_placement() -> None:
     assert errs2[0].offending_placement == p_dup_toff
 
 
+@pytest.mark.req("FR-2.6")
 def test_invalid_cnot_non_contiguous() -> None:
     """CNOT placed on non-contiguous wires (e.g. q0 and q2) produces NON_CONTIGUOUS_QUBITS."""
     p = GatePlacement(GateType.CNOT, targets=[2], controls=[0], column=0)
@@ -216,6 +229,7 @@ def test_invalid_cnot_non_contiguous() -> None:
     assert isinstance(errs[0].message, str) and len(errs[0].message.strip()) > 0
 
 
+@pytest.mark.req("FR-2.6")
 def test_invalid_toffoli_non_contiguous() -> None:
     """Toffoli placed on non-contiguous wires (e.g. q0, q1, q3) produces NON_CONTIGUOUS_QUBITS."""
     p = GatePlacement(GateType.Toffoli, targets=[3], controls=[0, 1], column=0)
@@ -227,6 +241,7 @@ def test_invalid_toffoli_non_contiguous() -> None:
     assert isinstance(errs[0].message, str) and len(errs[0].message.strip()) > 0
 
 
+@pytest.mark.req("FR-2.7")
 def test_invalid_two_gates_on_same_cell() -> None:
     """Two gates occupying the same (qubit, column) cell produce symmetric collision errors."""
     p1 = GatePlacement(GateType.H, targets=[0], controls=[], column=0)
@@ -242,6 +257,7 @@ def test_invalid_two_gates_on_same_cell() -> None:
         assert isinstance(e.message, str) and len(e.message.strip()) > 0
 
 
+@pytest.mark.req("FR-2.7")
 def test_invalid_cnot_overlapping_h() -> None:
     """A CNOT overlapping an H on one of its wires produces symmetric collision errors."""
     h = GatePlacement(GateType.H, targets=[0], controls=[], column=0)
@@ -256,6 +272,7 @@ def test_invalid_cnot_overlapping_h() -> None:
         assert isinstance(e.message, str) and len(e.message.strip()) > 0
 
 
+@pytest.mark.req("FR-2.8")
 def test_invalid_duplicate_measurement_on_qubit() -> None:
     """Two Measurements on the same qubit wire produce DUPLICATE_MEASUREMENT on the second."""
     m1 = GatePlacement(GateType.Measurement, targets=[0], controls=[], column=1)
@@ -269,6 +286,7 @@ def test_invalid_duplicate_measurement_on_qubit() -> None:
     assert isinstance(errs[0].message, str) and len(errs[0].message.strip()) > 0
 
 
+@pytest.mark.req("FR-2.9")
 def test_invalid_gate_after_measurement() -> None:
     """A gate placed after a Measurement on the same wire produces GATE_AFTER_MEASUREMENT."""
     m = GatePlacement(GateType.Measurement, targets=[0], controls=[], column=1)
@@ -282,6 +300,7 @@ def test_invalid_gate_after_measurement() -> None:
     assert isinstance(errs[0].message, str) and len(errs[0].message.strip()) > 0
 
 
+@pytest.mark.req("FR-2.9")
 def test_invalid_gate_after_measurement_qubit_as_control() -> None:
     """A gate after a Measurement where the measured qubit is a CONTROL produces GATE_AFTER_MEASUREMENT."""
     m = GatePlacement(GateType.Measurement, targets=[0], controls=[], column=1)
@@ -300,6 +319,7 @@ def test_invalid_gate_after_measurement_qubit_as_control() -> None:
 # ==============================================================================
 
 
+@pytest.mark.req("FR-2.10")
 def test_cascade_rule_out_of_range_qubit() -> None:
     """An out-of-range placement produces its own error and NO derived contiguity/collision errors."""
     # CNOT on wire 0 and 5 on a 2-qubit circuit:
@@ -313,6 +333,7 @@ def test_cascade_rule_out_of_range_qubit() -> None:
     assert errs[0].offending_placement == p
 
 
+@pytest.mark.req("FR-2.10")
 def test_cascade_rule_out_of_range_column_collision() -> None:
     """Two placements at column 50 produce COLUMN_OUT_OF_RANGE and NO derived collision errors."""
     p1 = GatePlacement(GateType.H, targets=[0], controls=[], column=50)
@@ -325,6 +346,7 @@ def test_cascade_rule_out_of_range_column_collision() -> None:
     # Neither produces a WIRE_COLUMN_COLLISION error
 
 
+@pytest.mark.req("FR-2.10")
 def test_cascade_rule_out_of_range_suppresses_measurement_error() -> None:
     """An out-of-range gate placed after Measurement does not produce GATE_AFTER_MEASUREMENT."""
     m = GatePlacement(GateType.Measurement, targets=[0], controls=[], column=1)
@@ -342,6 +364,7 @@ def test_cascade_rule_out_of_range_suppresses_measurement_error() -> None:
 # ==============================================================================
 
 
+@pytest.mark.req("FR-2.10")
 def test_determinism_under_shuffling() -> None:
     """Shuffling input placements yields an identical error list."""
     p1 = GatePlacement(GateType.H, targets=[0], controls=[], column=0)
@@ -362,6 +385,7 @@ def test_determinism_under_shuffling() -> None:
         assert shuffled_errors == base_errors
 
 
+@pytest.mark.req("FR-2.13")
 def test_purity() -> None:
     """Circuit is unchanged after validate, and validating twice gives equal results."""
     h = GatePlacement(GateType.H, targets=[0], controls=[], column=0)
@@ -377,6 +401,7 @@ def test_purity() -> None:
     assert circuit.placements == (h, cnot)
 
 
+@pytest.mark.req("NFR-3.1")
 def test_robustness_malformed_data() -> None:
     """validate does not raise on empty targets, huge/negative ints, or repeated placements."""
     p_empty = GatePlacement(GateType.H, targets=[], controls=[], column=0)
@@ -419,6 +444,7 @@ def arbitrary_circuit(draw: st.DrawFn) -> Circuit:
     return Circuit(num_qubits=num_qubits, placements=placements)
 
 
+@pytest.mark.req("NFR-7.4", "FR-2.10")
 @given(arbitrary_circuit())
 @settings(max_examples=100)
 def test_hypothesis_validation_invariants(circuit: Circuit) -> None:

@@ -13,6 +13,7 @@ from qiskit.circuit.library import (  # type: ignore[import-untyped]
 )
 
 
+@pytest.mark.req("FR-1.2", "NFR-7.1")
 def test_gate_type_values_and_round_trip() -> None:
     """GateType members match the exact required string values and round-trip."""
     expected_members = {
@@ -37,6 +38,7 @@ def test_gate_type_values_and_round_trip() -> None:
     assert GateType("Toffoli") is GateType.Toffoli
 
 
+@pytest.mark.req("FR-1.2", "NFR-7.1")
 def test_gate_type_unknown_string_raises() -> None:
     """Constructing GateType with an unknown string raises ValueError."""
     with pytest.raises(ValueError):
@@ -46,6 +48,7 @@ def test_gate_type_unknown_string_raises() -> None:
         GateType("cnot")  # Case sensitivity
 
 
+@pytest.mark.req("FR-1.2", "FR-1.3", "NFR-7.1")
 def test_gate_arity_table() -> None:
     """GATE_ARITY defines (num_targets, num_controls) for all 9 supported gate types."""
     assert len(GATE_ARITY) == 9
@@ -66,6 +69,7 @@ def test_gate_arity_table() -> None:
     assert GATE_ARITY[GateType.Toffoli] == (1, 2)
 
 
+@pytest.mark.req("NFR-7.1", "NFR-7.2", "NFR-7.7")
 def test_matrices_match_literal_references() -> None:
     """Matrices match literal complex reference matrices."""
     inv_sqrt2 = 1.0 / np.sqrt(2.0)
@@ -119,6 +123,7 @@ def test_matrices_match_literal_references() -> None:
     assert np.allclose(mat_t, ref_t, atol=1e-9)
 
 
+@pytest.mark.req("NFR-7.1", "NFR-7.2", "NFR-7.7")
 def test_matrices_match_qiskit_definitions() -> None:
     """Single-qubit gate matrices match Qiskit's own to_matrix() definitions."""
     mat_h = matrix(GateType.H)
@@ -146,6 +151,7 @@ def test_matrices_match_qiskit_definitions() -> None:
     assert np.allclose(mat_t, TGate().to_matrix(), atol=1e-9)
 
 
+@pytest.mark.req("NFR-7.1", "NFR-7.2")
 def test_multi_qubit_and_measurement_matrices() -> None:
     """CNOT and Toffoli return the X matrix; Measurement returns None."""
     x_matrix = XGate().to_matrix()
@@ -160,6 +166,7 @@ def test_multi_qubit_and_measurement_matrices() -> None:
     assert matrix(GateType.Measurement) is None
 
 
+@pytest.mark.req("NFR-7.1")
 def test_matrix_returns_defensive_copy() -> None:
     """Mutating the returned matrix does not modify internal cached matrices."""
     m1 = matrix(GateType.X)
