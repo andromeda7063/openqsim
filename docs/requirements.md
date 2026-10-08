@@ -471,6 +471,10 @@ no saved baseline is always `Dirty`.
 - `Stale` — a retained simulation result exists, but it was produced from
   an earlier circuit definition.
 
+The retained result includes an in-memory trace with an initial-state
+snapshot and one snapshot after each occupied circuit column. The selected
+step is preserved when the trace becomes stale and remains browsable.
+
 The following lifecycle rules are normative. Sections 5.4, 16, 18, and 21
 restate some of them for convenience; if a restatement conflicts with this
 section, this section governs.
@@ -482,17 +486,18 @@ file path) and Simulation status `None`.
 **LC-2.** After every successful circuit mutation, Save status shall be
 recalculated against the saved baseline: it is `Clean` when the current
 circuit equals the baseline and `Dirty` otherwise. If a retained simulation
-result exists, the mutation shall change Simulation status to `Stale`;
-otherwise Simulation status remains `None`. An operation that leaves the
+result exists, the mutation shall change Simulation status to `Stale` while
+retaining its trace and selected step; otherwise Simulation status remains
+`None`. An operation that leaves the
 circuit definition unchanged is not a successful mutation (see FR-1.45).
 
 **LC-3.** Undo and Redo update the circuit and recalculate Save status by
 comparing the resulting circuit definition with the saved baseline.
 
 **LC-4.** Undo and Redo make Simulation status `Stale` when a retained result
-exists; they do not restore historical simulation results. Undo and Redo do
-not create additional undo-history entries; they move the existing history
-position.
+exists; they retain the trace and selected step and do not restore historical
+simulation results. Undo and Redo do not create additional undo-history
+entries; they move the existing history position.
 
 **LC-5.** After Undo, a new successful mutation clears the redo history.
 
@@ -500,21 +505,23 @@ position.
 circuit definition as the new `Clean` baseline after a successful save.
 
 **LC-7.** Run does not change Save status. A successful Run replaces the
-retained simulation result and sets Simulation status to `Current`.
+retained simulation result and trace, selects the initial state, and sets
+Simulation status to `Current`.
 
-**LC-8.** A failed Run leaves the previously retained result, and its
-Simulation status (`None`, `Current`, or `Stale`), unchanged. It reports the
-failure using the standard error mechanism.
+**LC-8.** A failed Run leaves the previously retained result, trace, selected
+step, and Simulation status (`None`, `Current`, or `Stale`) unchanged. It
+reports the failure using the standard error mechanism.
 
 **LC-9.** New and successful Load/Open establish the resulting circuit as the
 `Clean` saved baseline (New has no file path; Load/Open sets the file path),
-clear simulation results so Simulation status becomes `None`, and clear both
-undo and redo history.
+clear simulation results and trace navigation so Simulation status becomes
+`None`, and clear both undo and redo history.
 
 **LC-10.** A successful Import OpenQASM replaces the current session with a
 new unsaved `.qcs` session: the imported circuit, no file path, no saved
 baseline, and therefore Save status `Dirty`. It clears simulation results so
-Simulation status becomes `None` and clears both undo and redo history. The
+Simulation status becomes `None`, clears trace navigation, and clears both
+undo and redo history. The
 `.qasm` file never becomes the session file.
 
 **LC-11.** A failed Load/Open or Import OpenQASM operation leaves the current
@@ -671,6 +678,17 @@ current file path and establish the current circuit as the clean baseline.
   FR-3.4                  The system shall compute one reduced Bloch  High
                           vector for each qubit.
 
+  FR-3.13                 A successful Run shall retain a display trace  High
+                          containing the initial all-zero state and one
+                          snapshot after every occupied circuit column.
+                          Each snapshot contains probabilities and Bloch
+                          vectors only and is not persisted.
+
+  FR-3.14                 Gates in one column shall be applied together  High
+                          before recording that column's snapshot. Empty
+                          columns create no snapshots; a circuit with no
+                          gates has only its initial snapshot.
+
   FR-3.5                  Simulation shall execute only when the      High
                           user activates Run.
 
@@ -698,7 +716,12 @@ current file path and establish the current circuit as the clean baseline.
 
   FR-3.12                 A failed Run shall leave the current circuit High
                           unchanged and shall preserve any previous
-                          simulation result and its Simulation status.
+                          simulation result, trace, selected step, and
+                          Simulation status.
+
+  FR-3.15                 Browsing snapshots shall not invoke the          High
+                          simulator or change the circuit, history, Save
+                          status, or Simulation status.
   -----------------------------------------------------------------------
 
 ## 9. Visualisation requirements
@@ -756,9 +779,18 @@ current file path and establish the current circuit as the clean baseline.
                           tolerance.              
 
   FR-4.10                 Bloch-sphere and        High
-                          histogram views shall   
-                          refresh after a         
-                          successful Run.         
+                          histogram views shall refresh after a
+                          successful Run and when the selected trace
+                          step changes.
+
+  FR-4.15                 The interface shall identify the selected     High
+                          step as the initial state or the state after a
+                          particular occupied column.
+
+  FR-4.16                 Previous and Next controls shall navigate     High
+                          snapshots without rerunning. Previous is
+                          disabled at the initial state and Next is
+                          disabled at the final state.
 
   FR-4.11                 The system shall allow  Medium
                           the user to export the  
@@ -766,14 +798,13 @@ current file path and establish the current circuit as the clean baseline.
                           PNG file.               
 
   FR-4.12                 The system shall allow  Medium
-                          the user to export the  
-                          Bloch-sphere view as a  
-                          PNG file.               
+                          the user to export the
+                          Bloch-sphere view as a PNG file showing the
+                          currently selected snapshot.
 
   FR-4.13                 The system shall allow  Medium
-                          the user to export the  
-                          histogram view as a PNG 
-                          file.                   
+                          the user to export the histogram view as a PNG
+                          file showing the currently selected snapshot.
 
   FR-4.14                 The interface shall     Medium
                           provide concise         
@@ -781,7 +812,7 @@ current file path and establish the current circuit as the clean baseline.
                           tooltips describing     
                           what the Bloch sphere   
                           and histogram           
-                          represent.              
+                          represent.
   -----------------------------------------------------------------------
 
 ## 10. Session management
@@ -1104,7 +1135,9 @@ The importer shall reject:
                           50 gates, and a fully populated 10-qubit,
                           50-column circuit (500 single-qubit gates), shall
                           have its statevector,
-                          basis probabilities, and Bloch vectors
+                          basis probabilities, Bloch vectors, and a
+                          display trace with an initial snapshot and
+                          snapshots after occupied columns
                           computed within 2 seconds of Run
                           activation. Qt rendering time is excluded
                           from this measurement.
@@ -1133,7 +1166,8 @@ The importer shall reject:
                           stack traces.
 
   NFR-2.3                 The main window shall keep the circuit  Medium
-                          canvas and result visualisations accessible
+                          canvas, step navigation, and result
+                          visualisations accessible
                           without requiring separate application windows.
 
   NFR-2.4                 Target qubits, control qubits, and       Medium
@@ -1160,7 +1194,8 @@ The importer shall reject:
                           Bloch-sphere and histogram views
                           shall all be available in the
                           same window. Simulation results
-                          shall appear below the workspace.
+                          shall appear below the workspace with step
+                          controls and the selected-step label.
                           Drag/drop,
                           selection, paste, and arrow-key
                           movement shall behave identically
@@ -1293,10 +1328,10 @@ The importer shall reject:
                           matrices.               
 
   NFR-7.3                 The simulation engine   High
-                          shall expose a non-GUI  
-                          API that accepts a      
-                          circuit and returns     
-                          simulation results.     
+                          shall expose a non-GUI
+                          API that accepts a
+                          circuit and returns simulation results and the
+                          initial/after-column display trace.
 
   NFR-7.4                 Validation shall be     High
                           independently testable  
@@ -1358,6 +1393,11 @@ Simulation results shall exist only in memory and shall contain:
 -   full statevector;
 -   basis-state probabilities;
 -   reduced Bloch vector for each qubit.
+
+The application session shall retain a display trace of snapshots containing
+the column identifier (`None` for the initial state), basis probabilities,
+and per-qubit Bloch vectors. Snapshots do not retain full statevectors.
+Neither the final result nor the trace is persisted in `.qcs` files.
 
 ### 14.3 `.qcs`
 

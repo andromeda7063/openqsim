@@ -7,7 +7,12 @@ import numpy as np
 import pytest
 from libqsim.domain.gates import GateType, matrix
 from libqsim.domain.models import Circuit, GatePlacement
-from libqsim.simulation.engine import InvalidCircuitError, SimulationError, simulate
+from libqsim.simulation.engine import (
+    InvalidCircuitError,
+    SimulationError,
+    simulate,
+    simulate_with_trace,
+)
 
 
 def _oracle_simulate(circuit: Circuit) -> np.ndarray:
@@ -171,6 +176,30 @@ def test_bell_state_probabilities() -> None:
     assert np.isclose(res.probabilities[2], 0.0, atol=1e-9)
     assert np.isclose(res.probabilities[3], 0.5, atol=1e-9)
     assert np.isclose(float(np.sum(res.probabilities)), 1.0, atol=1e-9)
+
+
+@pytest.mark.req("FR-3.13", "FR-3.14")
+def test_simulation_trace_initial_occupied_columns_and_measurement() -> None:
+    empty_result, empty_trace = simulate_with_trace(Circuit(num_qubits=1))
+    assert len(empty_trace) == 1
+    assert empty_trace[0].column is None
+    assert np.allclose(empty_trace[0].probabilities, [1.0, 0.0], atol=1e-9)
+    assert np.allclose(empty_result.probabilities, empty_trace[0].probabilities, atol=1e-9)
+
+    circuit = Circuit(
+        num_qubits=2,
+        placements=[
+            GatePlacement(GateType.H, targets=[0], controls=[], column=0),
+            GatePlacement(GateType.X, targets=[1], controls=[], column=0),
+            GatePlacement(GateType.Measurement, targets=[0], controls=[], column=4),
+        ],
+    )
+    result, trace = simulate_with_trace(circuit)
+    assert [snapshot.column for snapshot in trace] == [None, 0, 4]
+    assert np.allclose(trace[0].probabilities, [1.0, 0.0, 0.0, 0.0], atol=1e-9)
+    assert np.allclose(trace[1].probabilities, [0.0, 0.0, 0.5, 0.5], atol=1e-9)
+    assert np.allclose(trace[2].probabilities, trace[1].probabilities, atol=1e-9)
+    assert np.allclose(result.probabilities, trace[-1].probabilities, atol=1e-9)
 
 
 @pytest.mark.req("FR-3.1", "FR-3.2", "NFR-7.1", "NFR-7.7")

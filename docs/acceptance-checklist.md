@@ -68,8 +68,15 @@ automated test runners.
   - Simulation executes synchronously and completes immediately.
   - Status bar updates to `Simulation: Current` while `Save: Dirty` remains.
 - [ ] **Results Visualization**:
+  - Run selects `Initial state`; use Next twice to reach the state after the CNOT column before checking the final Bell-state visualizations.
   - **Bloch Spheres**: Qubit 0 and Qubit 1 Bloch spheres display vectors at the origin `(0, 0, 0)` indicating maximal entanglement.
   - **Histogram**: Displays 4 basis state bars (`|00>`, `|01>`, `|10>`, `|11>`); states `|00>` and `|11>` show probability 0.500 (50%); states `|01>` and `|10>` show 0.000.
+- [ ] **Step-through Simulation**:
+  - After Run, the results select `Initial state`; Previous is disabled.
+  - Select Next and confirm the label identifies the occupied column and both visualizations show that snapshot.
+  - Select Previous to return to the initial snapshot; browsing does not change Save or Simulation status.
+  - After editing, confirm the stale warning remains while the old snapshots remain browseable.
+  - Export Bloch and histogram PNGs at a non-final step and confirm each image shows that selected snapshot.
 - [ ] **Stale Simulation Indicator**:
   - Add an `X` gate at column 2 on `q0`.
   - Verify an orange/yellow **Stale** warning banner immediately appears across the results panel.

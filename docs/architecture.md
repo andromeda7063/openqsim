@@ -145,6 +145,11 @@ The simulation layer:
 5. calculates computational-basis probabilities;
 6. calculates one reduced Bloch vector for each qubit.
 
+The simulation API can also return a display trace containing the all-zero
+initial state and derived probabilities/Bloch vectors after each occupied
+column. The session owns the retained trace and selected step; the GUI only
+navigates and displays those snapshots. The trace is in-memory only.
+
 Simulation is exact noiseless statevector simulation within the application's
 numerical precision.
 
@@ -234,7 +239,8 @@ SimulationStatus
 A successful circuit mutation recalculates Save status against the saved
 baseline. If a simulation result exists, the result becomes stale.
 
-A successful Run replaces the retained simulation result and makes it current
+A successful Run replaces the retained simulation result and trace, selects
+the initial state, and makes it current
 without changing Save status.
 
 Undo and Redo change the circuit and recalculate Save status. They make any

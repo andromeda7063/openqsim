@@ -33,6 +33,35 @@ def test_lc1_startup() -> None:
     assert not session.can_redo
 
 
+@pytest.mark.req("LC-7", "LC-8", "FR-3.15")
+def test_trace_navigation_stale_retention_and_failed_run_preservation() -> None:
+    session = EditorSession()
+    session.apply(place_gate(session.circuit, GateType.H, qubit=0, column=0))
+    session.apply(place_gate(session.circuit, GateType.X, qubit=1, column=3))
+    assert session.run().ok
+    assert [snapshot.column for snapshot in session.simulation_trace] == [None, 0, 3]
+    assert session.selected_step == 0
+    assert session.selected_snapshot == session.simulation_trace[0]
+
+    assert session.select_step(2)
+    prior_result = session.simulation_result
+    prior_trace = session.simulation_trace
+    session.apply(place_gate(session.circuit, GateType.Z, qubit=0, column=5))
+    assert session.simulation_status == SimulationStatus.STALE
+    assert session.selected_step == 2
+    assert session.simulation_trace is prior_trace
+
+    def fail(_circuit: Circuit) -> SimulationResult:
+        raise SimulationError("expected failure")
+
+    outcome = session.run(simulate_fn=fail)
+    assert not outcome.ok
+    assert session.simulation_result is prior_result
+    assert session.simulation_trace is prior_trace
+    assert session.selected_step == 2
+    assert session.simulation_status == SimulationStatus.STALE
+
+
 @pytest.mark.req("LC-2", "FR-1.13", "FR-3.7", "NFR-5.5")
 def test_lc2_mutation_and_stale() -> None:
     session = EditorSession()

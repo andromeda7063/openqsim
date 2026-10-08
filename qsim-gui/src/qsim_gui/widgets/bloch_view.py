@@ -2,7 +2,7 @@
 
 import math
 
-from libqsim.simulation.results import SimulationResult
+from libqsim.simulation.results import SimulationSnapshot
 from PySide6.QtCore import QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QFont, QPainter, QPalette, QPen
 from PySide6.QtWidgets import (
@@ -137,7 +137,7 @@ class BlochView(QWidget):
 
         self._spheres: list[BlochSphereWidget] = []
 
-    def set_simulation_result(self, result: SimulationResult | None) -> None:
+    def set_simulation_result(self, result: SimulationSnapshot | None) -> None:
         # Clear existing spheres
         for sphere in self._spheres:
             self._grid.removeWidget(sphere)

@@ -3,7 +3,7 @@
 import math
 from dataclasses import dataclass
 
-from libqsim.simulation.results import SimulationResult
+from libqsim.simulation.results import SimulationSnapshot
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QFont, QMouseEvent, QPainter, QPalette, QPen
 from PySide6.QtWidgets import QToolTip, QWidget
@@ -79,14 +79,14 @@ class HistogramView(QWidget):
         self.setMouseTracking(True)
         self.setMinimumSize(320, 220)
 
-        self._result: SimulationResult | None = None
+        self._result: SimulationSnapshot | None = None
         self._bars: list[BarLayout] = []
 
     @property
     def bar_count(self) -> int:
         return len(self._bars)
 
-    def set_result(self, result: SimulationResult | None) -> None:
+    def set_result(self, result: SimulationSnapshot | None) -> None:
         self._result = result
         self._recompute_layout()
         self.update()

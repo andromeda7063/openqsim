@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QPushButton,
     QScrollArea,
     QVBoxLayout,
     QWidget,
@@ -39,6 +40,24 @@ class ResultsPanel(QWidget):
         self._stale_banner.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._stale_banner.setVisible(False)
         layout.addWidget(self._stale_banner)
+
+        navigation = QHBoxLayout()
+        self._previous_button = QPushButton("Previous", self)
+        self._previous_button.setObjectName("previous_step_button")
+        self._previous_button.clicked.connect(self._previous_step)
+        self._step_label = QLabel("", self)
+        self._step_label.setObjectName("simulation_step_label")
+        self._step_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._next_button = QPushButton("Next", self)
+        self._next_button.setObjectName("next_step_button")
+        self._next_button.clicked.connect(self._next_step)
+        navigation.addStretch(1)
+        navigation.addWidget(self._previous_button)
+        navigation.addWidget(self._step_label)
+        navigation.addWidget(self._next_button)
+        navigation.addStretch(1)
+        layout.addLayout(navigation)
+        self._navigation = navigation
 
         # Empty state label
         self._empty_label = QLabel(
@@ -118,21 +137,38 @@ class ResultsPanel(QWidget):
 
         layout.addWidget(self._content_widget)
         self._content_widget.setVisible(False)
+        self._navigation.setEnabled(False)
+
+    def _previous_step(self) -> None:
+        self._adapter.select_step(self._adapter.selected_step - 1)
+
+    def _next_step(self) -> None:
+        self._adapter.select_step(self._adapter.selected_step + 1)
 
     def _on_session_changed(self) -> None:
         sim_status = self._adapter.simulation_status
         result = self._adapter.simulation_result
+        snapshot = self._adapter.selected_snapshot
+        trace = self._adapter.simulation_trace
 
         # Update stale banner
         self._stale_banner.setVisible(sim_status == SimulationStatus.STALE)
 
-        if result is not None:
+        if result is not None and snapshot is not None:
             self._empty_label.setVisible(False)
             self._content_widget.setVisible(True)
-            self._bloch_view.set_simulation_result(result)
-            self._histogram_view.set_result(result)
+            self._navigation.setEnabled(True)
+            self._step_label.setText(
+                "Initial state" if snapshot.column is None else f"After column {snapshot.column}"
+            )
+            self._previous_button.setEnabled(self._adapter.selected_step > 0)
+            self._next_button.setEnabled(self._adapter.selected_step < len(trace) - 1)
+            self._bloch_view.set_simulation_result(snapshot)
+            self._histogram_view.set_result(snapshot)
         else:
             self._empty_label.setVisible(True)
             self._content_widget.setVisible(False)
+            self._navigation.setEnabled(False)
+            self._step_label.setText("")
             self._bloch_view.set_simulation_result(None)
             self._histogram_view.set_result(None)

@@ -7,7 +7,7 @@ import pytest
 from libqsim.application.operations import place_gate
 from libqsim.application.session import EditorSession, SimulationStatus
 from libqsim.domain.models import GateType
-from PySide6.QtWidgets import QApplication, QLabel
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton
 from qsim_gui.dialogs import StubUserInterface
 from qsim_gui.main_window import MainWindow
 from qsim_gui.state import SessionAdapter
@@ -82,6 +82,37 @@ def test_stale_banner_appears_after_mutation(qapp: QApplication) -> None:
     assert adapter.simulation_status == SimulationStatus.STALE
     assert stale_banner.isHidden() is False
     assert "Results are out of date" in stale_banner.text()
+
+
+@pytest.mark.req("FR-4.10", "FR-4.15", "FR-4.16")
+def test_results_navigation_updates_selected_snapshot(qapp: QApplication) -> None:
+    session = EditorSession()
+    session.apply(place_gate(session.circuit, GateType.H, qubit=0, column=0))
+    session.apply(place_gate(session.circuit, GateType.X, qubit=1, column=2))
+    adapter = SessionAdapter(session)
+    panel = ResultsPanel(adapter=adapter)
+
+    assert adapter.run().ok
+    label = panel.findChild(QLabel, "simulation_step_label")
+    previous = panel.findChild(QPushButton, "previous_step_button")
+    next_button = panel.findChild(QPushButton, "next_step_button")
+    histogram = panel.findChild(HistogramView)
+    assert label is not None and previous is not None and next_button is not None
+    assert histogram is not None
+    assert label.text() == "Initial state"
+    assert not previous.isEnabled()
+    assert next_button.isEnabled()
+    assert histogram._result is not None
+    assert histogram._result.probabilities[0] == pytest.approx(1.0)
+
+    next_button.click()
+    assert label.text() == "After column 0"
+    next_button.click()
+    assert label.text() == "After column 2"
+    assert not next_button.isEnabled()
+    assert histogram._result is not None
+    assert histogram._result.probabilities[2] == pytest.approx(0.5)
+    assert histogram._result.probabilities[3] == pytest.approx(0.5)
 
 
 @pytest.mark.req("FR-3.12")

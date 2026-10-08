@@ -12,20 +12,19 @@ from libqsim.domain.validation import validate
 from libqsim.persistence.qcs import QcsError, read, write
 from libqsim.qasm.exporter import export_text
 from libqsim.qasm.importer import QasmError, import_text
-from libqsim.simulation.engine import (
-    InvalidCircuitError,
-    SimulationError,
+from libqsim.simulation.engine import InvalidCircuitError, SimulationError, simulate_with_trace
+from libqsim.simulation.results import (
+    SimulationResult,
+    SimulationSnapshot,
+    snapshot_from_statevector,
 )
-from libqsim.simulation.engine import (
-    simulate as default_simulate,
-)
-from libqsim.simulation.results import SimulationResult
 
 __all__ = [
     "EditorSession",
     "IoOutcome",
     "RunOutcome",
     "SaveStatus",
+    "SimulationSnapshot",
     "SimulationStatus",
 ]
 
@@ -70,6 +69,8 @@ class EditorSession:
         self._baseline: Circuit | None = self._circuit
         self._file_path: Path | None = None
         self._simulation_result: SimulationResult | None = None
+        self._simulation_trace: tuple[SimulationSnapshot, ...] = ()
+        self._selected_step = 0
         self._simulation_status: SimulationStatus = SimulationStatus.NONE
         self._history: History = History()
         self._subscribers: list[Callable[[], None]] = []
@@ -107,6 +108,31 @@ class EditorSession:
     def simulation_result(self) -> SimulationResult | None:
         """The currently retained simulation result, if any."""
         return self._simulation_result
+
+    @property
+    def simulation_trace(self) -> tuple[SimulationSnapshot, ...]:
+        """Snapshots from the last successful Run."""
+        return self._simulation_trace
+
+    @property
+    def selected_step(self) -> int:
+        """Index of the currently displayed snapshot."""
+        return self._selected_step
+
+    @property
+    def selected_snapshot(self) -> SimulationSnapshot | None:
+        """Currently selected snapshot, if a trace is retained."""
+        if not self._simulation_trace:
+            return None
+        return self._simulation_trace[self._selected_step]
+
+    def select_step(self, step: int) -> bool:
+        """Select a stored snapshot without changing simulation status."""
+        if not 0 <= step < len(self._simulation_trace) or step == self._selected_step:
+            return False
+        self._selected_step = step
+        self._notify()
+        return True
 
     @property
     def can_undo(self) -> bool:
@@ -166,17 +192,22 @@ class EditorSession:
         On success, replaces the simulation result and sets SimulationStatus to CURRENT.
         On failure, leaves existing result and simulation status unchanged.
         """
-        sim = simulate_fn if simulate_fn is not None else default_simulate
         errors = validate(self._circuit)
         if errors:
             return RunOutcome(ok=False, messages=tuple(e.message for e in errors))
 
         try:
-            res = sim(self._circuit)
+            if simulate_fn is None:
+                res, trace = simulate_with_trace(self._circuit)
+            else:
+                res = simulate_fn(self._circuit)
+                trace = (snapshot_from_statevector(res.num_qubits, None, res.statevector),)
         except (InvalidCircuitError, SimulationError) as exc:
             return RunOutcome(ok=False, messages=(str(exc),))
 
         self._simulation_result = res
+        self._simulation_trace = trace
+        self._selected_step = 0
         self._simulation_status = SimulationStatus.CURRENT
         self._notify()
         return RunOutcome(ok=True)
@@ -187,6 +218,8 @@ class EditorSession:
         self._baseline = self._circuit
         self._file_path = None
         self._simulation_result = None
+        self._simulation_trace = ()
+        self._selected_step = 0
         self._simulation_status = SimulationStatus.NONE
         self._history.clear()
         self._notify()
@@ -197,6 +230,8 @@ class EditorSession:
         self._baseline = circuit
         self._file_path = path
         self._simulation_result = None
+        self._simulation_trace = ()
+        self._selected_step = 0
         self._simulation_status = SimulationStatus.NONE
         self._history.clear()
         self._notify()
@@ -207,6 +242,8 @@ class EditorSession:
         self._baseline = None
         self._file_path = None
         self._simulation_result = None
+        self._simulation_trace = ()
+        self._selected_step = 0
         self._simulation_status = SimulationStatus.NONE
         self._history.clear()
         self._notify()

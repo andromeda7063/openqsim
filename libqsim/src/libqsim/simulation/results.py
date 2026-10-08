@@ -35,3 +35,38 @@ class SimulationResult:
     def basis_labels(self) -> list[str]:
         """Return the basis state labels corresponding to the simulated circuit."""
         return basis_labels(self.num_qubits)
+
+
+@dataclass(frozen=True)
+class SimulationSnapshot:
+    """Display data for the initial state or the result after one column."""
+
+    num_qubits: int
+    column: int | None
+    probabilities: npt.NDArray[np.float64]
+    bloch_vectors: tuple[tuple[float, float, float], ...]
+
+    def __post_init__(self) -> None:
+        self.probabilities.flags.writeable = False
+
+    @property
+    def basis_labels(self) -> list[str]:
+        """Return basis labels in Qiskit-compatible order."""
+        return basis_labels(self.num_qubits)
+
+
+def snapshot_from_statevector(
+    num_qubits: int,
+    column: int | None,
+    statevector: npt.NDArray[np.complex128],
+) -> SimulationSnapshot:
+    """Build display-only data for a statevector."""
+    from libqsim.simulation.bloch import compute_bloch_vectors
+
+    probabilities = np.asarray(statevector.real**2 + statevector.imag**2, dtype=np.float64)
+    return SimulationSnapshot(
+        num_qubits=num_qubits,
+        column=column,
+        probabilities=probabilities,
+        bloch_vectors=compute_bloch_vectors(statevector, num_qubits),
+    )

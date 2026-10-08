@@ -6,7 +6,7 @@ from pathlib import Path
 from libqsim.application.operations import OperationResult
 from libqsim.application.session import EditorSession, RunOutcome, SaveStatus, SimulationStatus
 from libqsim.domain.models import Circuit
-from libqsim.simulation.results import SimulationResult
+from libqsim.simulation.results import SimulationResult, SimulationSnapshot
 from PySide6.QtCore import QObject, Signal
 
 
@@ -47,6 +47,21 @@ class SessionAdapter(QObject):
     @property
     def simulation_result(self) -> SimulationResult | None:
         return self._session.simulation_result
+
+    @property
+    def simulation_trace(self) -> tuple[SimulationSnapshot, ...]:
+        return self._session.simulation_trace
+
+    @property
+    def selected_step(self) -> int:
+        return self._session.selected_step
+
+    @property
+    def selected_snapshot(self) -> SimulationSnapshot | None:
+        return self._session.selected_snapshot
+
+    def select_step(self, step: int) -> bool:
+        return self._session.select_step(step)
 
     @property
     def can_undo(self) -> bool:
