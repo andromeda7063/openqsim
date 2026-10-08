@@ -18,6 +18,25 @@ exact, noiseless statevector simulation with Qiskit Aer.
 | [`docs/qasm-support.md`](docs/qasm-support.md) | Supported OpenQASM 2.0 subset |
 | [`docs/quick-start.md`](docs/quick-start.md) | User walkthrough (Bell state) |
 
+## Phase 2 proposal (not yet authoritative)
+
+The Composer-inspired next iteration is being specified in
+[`docs/phase2/requirements.md`](docs/phase2/requirements.md). Its research,
+implementation sequence, and proposed changes are in
+[`docs/phase2/research.md`](docs/phase2/research.md),
+[`docs/phase2/plan.md`](docs/phase2/plan.md), and
+[`docs/phase2/changes.md`](docs/phase2/changes.md).
+
+These documents are discussion drafts. Do not implement their proposals or
+override the current release rules below until the user resolves the open
+decisions in the phase 2 requirements and explicitly adopts that baseline.
+The user has resolved the product boundary: phase 2 remains 100% offline while
+adding Composer's local capabilities. QPU runs, accounts, remote jobs,
+sharing, telemetry, and all other runtime network access are excluded.
+When adopted, update this source-of-truth table and the affected architecture,
+QCS, QASM, test, and user guides together. Preserve the current requirements
+as a versioned historical baseline rather than silently changing its meaning.
+
 - Read the relevant requirements before changing product behavior.
 - Lifecycle rules **LC-1 to LC-17** (requirements §6.5) govern application
   state. If another section restates them differently, §6.5 wins.
