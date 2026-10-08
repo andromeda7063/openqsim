@@ -4,6 +4,9 @@ Changes on `v1.1-dev` relative to `main` (v1.0):
 
 ## v1.1 (in development)
 
+- Redesigned Bloch results as independently rotatable wireframe spheres with
+  visible vector coordinates, per-sphere Reset View controls, and PNG export
+  that captures the displayed angles and simulation snapshot.
 - Added a fixed offline library of five editable circuit examples. Loading an
   example uses the dirty-session prompt and creates a new unsaved session.
 - Reworked the circuit workspace with a compact vertical palette of symbolic

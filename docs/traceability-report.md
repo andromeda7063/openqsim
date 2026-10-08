@@ -2,23 +2,25 @@
 
 ## 1. Executive Summary
 
-- **Total Requirements Defined**: 194
-  - **High Priority (FR, NFR, LC)**: 137
-  - **Medium Priority**: 57
-- **Total Tests Collected**: 337
-- **Requirements Covered**: 194 / 194 (100.0%)
-- **High-Priority Coverage**: 137 / 137 (100.0%)
-- **Medium-Priority Coverage**: 57 / 57 (100.0%)
+- **Total Requirements Defined**: 202
+  - **High Priority (FR, NFR, LC)**: 142
+  - **Medium Priority**: 60
+- **Total Tests Collected**: 340 across core, GUI, and acceptance suites
+- **Requirements Covered**: 202 / 202 (automated checks and manual visual acceptance)
+- **High-Priority Coverage**: 142 / 142
+- **Medium-Priority Coverage**: 60 / 60
 
 ## 2. Coverage Gaps
 
 ### High-Priority Requirements with NO Test
 
-**None.** All High-priority functional requirements, non-functional requirements, and lifecycle rules (100%) have automated test coverage.
+**None.** High-priority Bloch interaction and state requirements have automated
+checks; wireframe readability also requires manual visual acceptance.
 
 ### Medium-Priority Requirements with NO Test
 
-**None.** All Medium-priority requirements (100%) have automated test coverage.
+**None.** NFR-2.8 layout readability requires manual acceptance on the
+reference display in addition to automated layout smoke tests.
 
 ## 3. Full Traceability Matrix
 
@@ -103,13 +105,20 @@
 | **FR-3.8** | High | The application shall clearly indicate when | 2 | `qsim-gui/tests/test_gui_smoke.py::test_status_bar_indicators_and_stale_style`<br>`qsim-gui/tests/test_results_smoke.py::test_stale_banner_appears_after_mutation` |
 | **FR-3.9** | High | The simulator shall execute gates in | 2 | `libqsim/tests/test_simulation.py::test_column_order_execution`<br>`libqsim/tests/test_simulation.py::test_placement_list_order_invariance` |
 | **FR-4.1** | High | The system shall | 1 | `qsim-gui/tests/test_results_smoke.py::test_bell_state_run_results_panel` |
-| **FR-4.10** | High | Bloch-sphere and | 3 | `qsim-gui/tests/test_results_smoke.py::test_bell_state_run_results_panel`<br>`qsim-gui/tests/test_results_smoke.py::test_stale_banner_appears_after_mutation`<br>`qsim-gui/tests/test_results_smoke.py::test_results_navigation_updates_selected_snapshot` |
+| **FR-4.10** | High | Results refresh without resetting Bloch angles | 4 | `qsim-gui/tests/test_results_smoke.py::test_bell_state_run_results_panel`<br>`qsim-gui/tests/test_results_smoke.py::test_stale_banner_appears_after_mutation`<br>`qsim-gui/tests/test_results_smoke.py::test_results_navigation_updates_selected_snapshot`<br>`qsim-gui/tests/test_bloch_rotation.py::test_snapshot_preserves_angle_and_export_matches_view` |
 | **FR-4.11** | Medium | The system shall allow | 1 | `qsim-gui/tests/test_file_actions.py::test_export_images_circuit_bloch_histogram` |
-| **FR-4.12** | Medium | The system shall allow | 1 | `qsim-gui/tests/test_file_actions.py::test_export_images_circuit_bloch_histogram` |
+| **FR-4.12** | Medium | Bloch PNG matches selected snapshot and displayed angles | 2 | `qsim-gui/tests/test_file_actions.py::test_export_images_circuit_bloch_histogram`<br>`qsim-gui/tests/test_bloch_rotation.py::test_snapshot_preserves_angle_and_export_matches_view` |
 | **FR-4.13** | Medium | The system shall allow | 1 | `qsim-gui/tests/test_file_actions.py::test_export_images_circuit_bloch_histogram` |
-| **FR-4.14** | Medium | The interface shall | 2 | `qsim-gui/tests/test_help.py::test_palette_and_results_explanations_exist`<br>`qsim-gui/tests/test_results_smoke.py::test_bell_state_run_results_panel` |
+| **FR-4.14** | Medium | Explain Bloch meaning, rotation, and reset | 2 + manual | `qsim-gui/tests/test_help.py::test_palette_and_results_explanations_exist`<br>`qsim-gui/tests/test_results_smoke.py::test_bell_state_run_results_panel`; `docs/acceptance-checklist.md` Rotatable Bloch Views |
 | **FR-4.15** | High | The interface shall identify the selected | 1 | `qsim-gui/tests/test_results_smoke.py::test_results_navigation_updates_selected_snapshot` |
 | **FR-4.16** | High | Previous and Next controls shall navigate | 1 | `qsim-gui/tests/test_results_smoke.py::test_results_navigation_updates_selected_snapshot` |
+| **FR-4.17** | High | Wireframe distinguishes front and rear lines | 1 + manual | `qsim-gui/tests/test_projection.py::test_orbit_projection_preserves_sphere_radius_and_depth`; `docs/acceptance-checklist.md` Rotatable Bloch Views |
+| **FR-4.18** | High | Left-drag rotates one sphere independently | 1 | `qsim-gui/tests/test_bloch_rotation.py::test_drag_is_independent_view_state_and_reset` |
+| **FR-4.19** | High | Rotation leaves simulation and session state unchanged | 1 | `qsim-gui/tests/test_bloch_rotation.py::test_drag_is_independent_view_state_and_reset` |
+| **FR-4.20** | High | Numeric Bloch coordinates remain visible | 1 + manual | `qsim-gui/tests/test_bloch_rotation.py::test_snapshot_preserves_angle_and_export_matches_view`; `docs/acceptance-checklist.md` Rotatable Bloch Views |
+| **FR-4.21** | Medium | Reset View restores one sphere's default angle | 1 | `qsim-gui/tests/test_bloch_rotation.py::test_drag_is_independent_view_state_and_reset` |
+| **FR-4.22** | High | Snapshot changes preserve sphere angles | 1 | `qsim-gui/tests/test_bloch_rotation.py::test_snapshot_preserves_angle_and_export_matches_view` |
+| **FR-4.23** | Medium | Bloch PNG captures displayed angles and snapshot | 1 + manual | `qsim-gui/tests/test_bloch_rotation.py::test_snapshot_preserves_angle_and_export_matches_view`; `docs/acceptance-checklist.md` Rotatable Bloch Views |
 | **FR-4.2** | High | Each Bloch sphere shall | 1 | `qsim-gui/tests/test_results_smoke.py::test_bell_state_run_results_panel` |
 | **FR-4.3** | High | Each Bloch sphere shall | 2 | `qsim-gui/tests/test_projection.py::test_origin_projects_to_sphere_center`<br>`qsim-gui/tests/test_projection.py::test_six_axis_endpoints_project_to_distinct_points` |
 | **FR-4.4** | High | The reduced Bloch | 3 | `qsim-gui/tests/test_projection.py::test_origin_projects_to_sphere_center`<br>`qsim-gui/tests/test_projection.py::test_six_axis_endpoints_project_to_distinct_points`<br>`tests/acceptance/test_release_acceptance.py::test_section17_bell_state_and_bloch` |
@@ -173,6 +182,7 @@
 | **NFR-2.5** | Medium | Each qubit's circuit wire shall remain | 1 | `qsim-gui/tests/test_canvas_smoke.py::test_canvas_renders_sample_circuit_not_blank` |
 | **NFR-2.6** | Medium | The editor shall clearly communicate the | 9 | 9 tests (e.g. `qsim-gui/tests/test_selection_controller.py::test_click_gate_and_click_empty`<br>`qsim-gui/tests/test_selection_controller.py::test_ctrl_click_toggle`<br>`qsim-gui/tests/test_selection_controller.py::test_marquee_replace` ...) |
 | **NFR-2.7** | High | The circuit canvas shall provide | 6 | 6 tests (e.g. `qsim-gui/tests/test_canvas_smoke.py::test_canvas_renders_sample_circuit_not_blank`<br>`qsim-gui/tests/test_grid.py::test_grid_round_trip_for_all_cells`<br>`qsim-gui/tests/test_grid.py::test_grid_points_outside_return_none` ...) |
+| **NFR-2.8** | Medium | Bloch views remain readable and accessible at 1920x1080 | manual | `docs/acceptance-checklist.md` Rotatable Bloch Views and Window Management |
 | **NFR-3.1** | High | Malformed circuits, malformed `.qcs` | 61 | 61 tests (e.g. `libqsim/tests/test_qasm.py::test_rejected_constructs_name_construct_and_line_number[include "qelib1.inc";\nqreg q[2];\n-OPENQASM 2.0-1]`<br>`libqsim/tests/test_qasm.py::test_rejected_constructs_name_construct_and_line_number[OPENQASM 2.0;\nqreg q[2];\nh q[0];\n-include-2]`<br>`libqsim/tests/test_qasm.py::test_rejected_constructs_name_construct_and_line_number[OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg foo[2];\n-foo-3]` ...) |
 | **NFR-3.2** | High | A failed simulation shall leave the | 1 | `libqsim/tests/test_session.py::test_lc8_failing_simulation` |
 | **NFR-3.3** | High | A failed save or load operation shall | 4 | 4 tests (e.g. `libqsim/tests/test_qcs.py::test_qcs_atomic_file_operations`<br>`libqsim/tests/test_session_files.py::test_session_save_failure_preserves_state`<br>`qsim-gui/tests/test_file_actions.py::test_failed_open_keeps_old_circuit_and_history` ...) |

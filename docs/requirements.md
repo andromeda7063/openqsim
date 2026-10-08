@@ -747,24 +747,27 @@ leave the complete prior state unchanged.
                           which it corresponds.   
 
   FR-4.3                  Each Bloch sphere shall High
-                          show the X, Y, and Z    
-                          axes.                   
+                          show the X, Y, and Z axes with labels that
+                          remain legible as the view rotates.
 
   FR-4.4                  The reduced Bloch       High
                           vector shall be         
                           rendered as a point     
                           within or on the unit   
-                          sphere.                 
+                          sphere and remain visually distinguishable
+                          from the wireframe.
 
   FR-4.5                  A pure single-qubit     Medium
                           state shall be          
                           represented on the      
                           sphere surface within   
-                          numerical tolerance.    
+                          numerical tolerance and remain visually
+                          distinguishable from the wireframe.
 
   FR-4.6                  A mixed reduced state   High
                           may be represented      
-                          inside the sphere.      
+                          inside the sphere and remain visually
+                          distinguishable from the wireframe.
 
   FR-4.7                  The system shall        High
                           display the full        
@@ -790,7 +793,8 @@ leave the complete prior state unchanged.
   FR-4.10                 Bloch-sphere and        High
                           histogram views shall refresh after a
                           successful Run and when the selected trace
-                          step changes.
+                          step changes without resetting Bloch camera
+                          orientations while the result view remains open.
 
   FR-4.15                 The interface shall identify the selected     High
                           step as the initial state or the state after a
@@ -809,7 +813,8 @@ leave the complete prior state unchanged.
   FR-4.12                 The system shall allow  Medium
                           the user to export the
                           Bloch-sphere view as a PNG file showing the
-                          currently selected snapshot.
+                          currently selected snapshot and matching the
+                          displayed camera orientations.
 
   FR-4.13                 The system shall allow  Medium
                           the user to export the histogram view as a PNG
@@ -821,7 +826,34 @@ leave the complete prior state unchanged.
                           tooltips describing     
                           what the Bloch sphere   
                           and histogram           
-                          represent.
+                          represent, how to rotate a sphere by dragging,
+                          and how to reset its view.
+
+  FR-4.17                 Each Bloch sphere shall use a wireframe that      High
+                          communicates three-dimensional structure and
+                          distinguishes front-facing from rear-facing lines.
+
+  FR-4.18                 Left-button dragging that starts inside a sphere's High
+                          drawing area shall rotate only that sphere's view.
+                          Each sphere shall retain its own orientation.
+
+  FR-4.19                 Rotating a sphere shall not change its simulated  High
+                          Bloch vector, the circuit, history, Save status,
+                          Simulation status, or selected simulation step.
+
+  FR-4.20                 Each sphere shall display its qubit's numeric     High
+                          Bloch-vector (x, y, z) coordinates independently
+                          of camera orientation.
+
+  FR-4.21                 Each sphere shall provide a Reset View control that Medium
+                          returns that sphere to its default orientation.
+
+  FR-4.22                 Selecting a simulation snapshot shall update the  High
+                          displayed vector while preserving each sphere's
+                          orientation.
+
+  FR-4.23                 Exporting the Bloch view as PNG shall capture the  Medium
+                          displayed orientations and selected snapshot.
   -----------------------------------------------------------------------
 
 ## 10. Session management
@@ -1239,6 +1271,11 @@ The importer shall reject:
                           for cells reached by scrolling,
                           and a moved or pasted selection
                           shall be scrolled into view.
+
+  NFR-2.8                 At the reference 1920x1080 layout, Bloch wireframes, Medium
+                          axis labels, vector indicators, numeric coordinates,
+                          and Reset View controls shall remain readable and
+                          accessible alongside the histogram.
   -----------------------------------------------------------------------
 
 ### 13.3 Reliability
@@ -1458,7 +1495,8 @@ Section 11.
 ### 14.5 Images
 
 PNG exports shall contain only the rendered circuit, Bloch-sphere view,
-or histogram view requested by the user.
+or histogram view requested by the user. A Bloch PNG shall show the
+currently selected simulation snapshot at each sphere's displayed angle.
 
 ## 15. External interfaces
 
@@ -1681,6 +1719,14 @@ The implementation shall include automated tests for at least:
   Entangled qubit Bloch vector        reduced vector may lie inside the
                                       sphere
 
+  Bloch camera rotation              changes only the view orientation;
+                                      vector coordinates and session state
+                                      remain unchanged
+
+  Bloch snapshot and export           snapshot changes retain each angle;
+                                      PNG matches the displayed snapshot
+                                      and orientations
+
   Invalid overlapping gates           validation failure
 
   Y on q0                             statevector `i|1>` (Qiskit Y matrix)
@@ -1805,6 +1851,12 @@ The release shall be accepted only when all of the following are true:
 -   OpenQASM import/export works for the defined subset and preserves
     execution order and supported gate semantics.
 -   PNG exports work for circuit, Bloch-sphere, and histogram views.
+-   Each Bloch sphere rotates independently by left-drag within its drawing
+    area. Wireframe front and rear lines, axes, labels, vector, numeric
+    coordinates, and Reset View remain legible at varied angles.
+-   Bloch rotation leaves circuit, history, statuses, vector coordinates, and
+    selected step unchanged. Snapshot navigation retains all sphere angles.
+-   Bloch PNG export matches the displayed angles and selected snapshot.
 
 ### 18.2 State-management acceptance
 
@@ -1869,6 +1921,10 @@ dependency versions. Other platforms are not part of release acceptance.
   FR-3                    Simulator               Reference-circuit tests
 
   FR-4                    Visualisation layer     GUI/integration tests
+
+  FR-4.17 to FR-4.23, NFR-2.8  Rotatable Bloch view  GUI interaction,
+                                                  projection/export tests;
+                                                  manual visual acceptance
 
   FR-5                    Session manager         QCS round-trip and
                                                   lifecycle tests

@@ -88,7 +88,8 @@ class ResultsPanel(QWidget):
 
         bloch_exp = QLabel(
             "Each sphere visualises one qubit's state. Pure states lie on the surface (|r| = 1). "
-            "Entangled or mixed states appear inside the sphere (|r| < 1), with maximally entangled qubits at center.",
+            "Entangled or mixed states appear inside the sphere (|r| < 1), with maximally entangled qubits at center. "
+            "Left-drag inside a sphere to rotate its view; use Reset View below it to restore the angle.",
             bloch_section,
         )
         bloch_exp.setObjectName("explanation_label")

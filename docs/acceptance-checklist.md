@@ -32,6 +32,16 @@ automated test runners.
 - [ ] Applying valid supported QASM to a dirty session offers Save, Don't Save, and Cancel; Cancel preserves the session.
 - [ ] Bloch spheres and the histogram appear side by side in the bottom results area.
 
+## Rotatable Bloch Views (FR-4.17 to FR-4.23, NFR-2.8)
+
+- [ ] At 1920x1080, inspect each wireframe, front and rear line styles, X/Y/Z labels, vector, numeric coordinates, and Reset View control. Check readability in tiled and floating layouts.
+- [ ] Left-drag starting inside `q0`'s sphere at several angles. Confirm `q0` rotates while `q1` keeps its angle. Dragging from a label or surrounding panel does not rotate a sphere.
+- [ ] Confirm the vector stays attached to its Bloch coordinates; pure vectors remain on the sphere surface and mixed reduced-state vectors stay inside. Numeric coordinates stay unchanged while dragging.
+- [ ] Confirm dragging changes neither the circuit nor Save/Simulation status, selected step, or Undo/Redo availability.
+- [ ] Move to another simulation snapshot. Confirm the vector and coordinates update while each sphere retains its angle.
+- [ ] Click **Reset View** on one sphere. Confirm it returns to the default angle and the other sphere does not move.
+- [ ] Export a Bloch PNG after rotating spheres and selecting a non-final snapshot. Confirm the PNG shows that snapshot at the displayed angles, with legible axes, labels, vectors, and coordinates.
+
 ## Appearance Preferences (FR-7.9 to FR-7.10)
 
 - [ ] Open **Edit -> Preferences...** and confirm Dark and Dark Purple are available.
@@ -132,7 +142,7 @@ automated test runners.
   - Run the circuit so results are populated.
   - Select **File -> Export Image -> Bloch Spheres (PNG)...**.
   - Save as `bloch.png`.
-  - Inspect `bloch.png`: shows all qubit Bloch spheres, labels (`q0`, `q1`), axes, and vector indicators.
+  - Inspect `bloch.png`: shows all qubit Bloch spheres, labels (`q0`, `q1`), axes, vector indicators, coordinates, selected snapshot, and displayed angles.
 - [ ] **Export Probability Histogram Image**:
   - Select **File -> Export Image -> Probability Histogram (PNG)...**.
   - Save as `histogram.png`.

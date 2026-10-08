@@ -1,5 +1,7 @@
 """Tests for 3D-to-2D Bloch sphere projection geometry."""
 
+import math
+
 import pytest
 from qsim_gui.widgets.projection import BlochProjection
 
@@ -45,3 +47,16 @@ def test_six_axis_endpoints_project_to_distinct_points() -> None:
     assert projected_points["-Z"][1] > 100.0
     assert projected_points["+Z"][0] == pytest.approx(100.0, abs=1e-6)
     assert projected_points["-Z"][0] == pytest.approx(100.0, abs=1e-6)
+
+
+@pytest.mark.req("FR-4.17", "FR-4.18")
+def test_orbit_projection_preserves_sphere_radius_and_depth() -> None:
+    for yaw, elevation in ((0.0, 0.0), (0.7, -0.5), (2.8, 1.2)):
+        proj = BlochProjection(100.0, 100.0, 50.0, yaw, elevation)
+        for point in ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)):
+            px, py = proj.project(*point)
+            depth = proj.view_coordinates(*point)[2]
+            assert math.hypot(px - 100.0, py - 100.0) ** 2 + (50.0 * depth) ** 2 == pytest.approx(
+                50.0**2
+            )
+        assert proj.project(0.0, 0.0, 0.0) == (100.0, 100.0)

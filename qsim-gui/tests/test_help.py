@@ -107,6 +107,8 @@ def test_palette_and_results_explanations_exist(qapp: QApplication) -> None:
     text_blob = " ".join(labels)
     assert "Bloch" in text_blob
     assert "Histogram" in text_blob or "Probabilities" in text_blob
+    assert "Left-drag inside a sphere" in text_blob
+    assert "Reset View" in text_blob
 
 
 @pytest.mark.req("NFR-4.1")

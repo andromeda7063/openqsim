@@ -85,6 +85,11 @@ OpenQSim displays one reduced Bloch sphere for each qubit.
 
 The Bloch vector represents the reduced state of that qubit. For an entangled
 state, the reduced vector may lie inside the sphere rather than on its surface.
+The `(x, y, z)` values below each sphere show its vector coordinates. Left-drag
+inside a sphere to rotate its wireframe view; other spheres keep their own
+angles. Use **Reset View** below a sphere to restore its original angle.
+Stepping through simulation snapshots changes the vectors without resetting
+the view angles.
 
 ## 7. Edit After Running
 
