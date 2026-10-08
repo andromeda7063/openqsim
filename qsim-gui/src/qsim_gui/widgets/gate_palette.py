@@ -115,6 +115,7 @@ class GatePalette(QWidget):
         for gate_type, tooltip in self.items():
             btn = DraggableGateButton(gate_type, tooltip, self)
             btn.setAccessibleName(gate_type.value)
+            btn.setProperty("gateButton", True)
             self._buttons.append(btn)
             layout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignHCenter)
 

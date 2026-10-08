@@ -37,10 +37,6 @@ class ResultsPanel(QWidget):
         self._stale_banner = QLabel("Results are out of date. Run again.", self)
         self._stale_banner.setObjectName("stale_banner")
         self._stale_banner.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._stale_banner.setStyleSheet(
-            "background-color: #ffd6d6; color: #990000; font-weight: bold; "
-            "padding: 6px; border: 1px solid #cc0000; border-radius: 4px;"
-        )
         self._stale_banner.setVisible(False)
         layout.addWidget(self._stale_banner)
 
@@ -50,7 +46,7 @@ class ResultsPanel(QWidget):
         )
         self._empty_label.setObjectName("empty_state_label")
         self._empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._empty_label.setStyleSheet("color: #666; padding: 40px; font-size: 13px;")
+        self._empty_label.setStyleSheet("padding: 40px; font-size: 13px;")
         layout.addWidget(self._empty_label)
 
         # Content container
@@ -78,7 +74,7 @@ class ResultsPanel(QWidget):
         )
         bloch_exp.setObjectName("explanation_label")
         bloch_exp.setWordWrap(True)
-        bloch_exp.setStyleSheet("color: #555; font-size: 11px;")
+        bloch_exp.setStyleSheet("font-size: 11px;")
         bloch_layout.addWidget(bloch_exp)
 
         # Bloch view in scroll area
@@ -112,7 +108,7 @@ class ResultsPanel(QWidget):
         )
         hist_exp.setObjectName("explanation_label")
         hist_exp.setWordWrap(True)
-        hist_exp.setStyleSheet("color: #555; font-size: 11px;")
+        hist_exp.setStyleSheet("font-size: 11px;")
         histogram_layout.addWidget(hist_exp)
 
         # Histogram view

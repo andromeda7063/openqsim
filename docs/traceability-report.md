@@ -2,13 +2,13 @@
 
 ## 1. Executive Summary
 
-- **Total Requirements Defined**: 182
+- **Total Requirements Defined**: 184
   - **High Priority (FR, NFR, LC)**: 124
-  - **Medium Priority**: 58
-- **Total Tests Collected**: 321
-- **Requirements Covered**: 179 / 182 (98.4%)
+  - **Medium Priority**: 60
+- **Total Tests Collected**: 212
+- **Requirements Covered**: 184 / 184 (100.0%)
 - **High-Priority Coverage**: 124 / 124 (100.0%)
-- **Medium-Priority Coverage**: 55 / 58 (94.8%)
+- **Medium-Priority Coverage**: 60 / 60 (100.0%)
 
 ## 2. Coverage Gaps
 
@@ -18,11 +18,8 @@
 
 ### Medium-Priority Requirements with NO Test
 
-- **FR-7.6** — Symbolic circuit gates and compact vertical palette.
-- **FR-7.7** — Bottom results area with side-by-side visualisations.
-- **FR-7.8** — Editable OpenQASM editor, syntax checking, and apply action.
-
-These v1.1 requirements need automated coverage.
+**None.** All current medium-priority requirements have automated test
+coverage.
 
 ## 3. Full Traceability Matrix
 
@@ -156,9 +153,11 @@ These v1.1 requirements need automated coverage.
 | **FR-7.3** | Medium | Each gate in the | 2 | `qsim-gui/tests/test_help.py::test_palette_and_results_explanations_exist`<br>`qsim-gui/tests/test_palette.py::test_palette_contains_exactly_nine_items_with_tooltips` |
 | **FR-7.4** | Medium | The application shall | 1 | `qsim-gui/tests/test_help.py::test_palette_and_results_explanations_exist` |
 | **FR-7.5** | Medium | The application shall | 3 | `qsim-gui/tests/test_help.py::test_resolver_finds_all_docs`<br>`qsim-gui/tests/test_help.py::test_each_help_page_opens_and_contains_title`<br>`qsim-gui/tests/test_help.py::test_main_window_help_menu_actions` |
-| **FR-7.6** | Medium | The circuit editor shall display standard gate symbols and a compact vertical symbolic palette | 0 | — |
-| **FR-7.7** | Medium | Simulation results shall appear below the workspace with visualisations side by side | 0 | — |
-| **FR-7.8** | Medium | The main window shall provide an editable, syntax-checked OpenQASM panel | 0 | — |
+| **FR-7.6** | Medium | The circuit editor shall display standard gate symbols and a compact vertical symbolic palette | 1 | `qsim-gui/tests/test_palette.py::test_palette_contains_exactly_nine_items_with_tooltips` |
+| **FR-7.7** | Medium | Simulation results shall appear below the workspace with visualisations side by side | 1 | `qsim-gui/tests/test_gui_smoke.py::test_main_window_construction_and_regions` |
+| **FR-7.8** | Medium | The main window shall provide an editable, syntax-checked OpenQASM panel | 3 | `qsim-gui/tests/test_qasm_panel.py::test_qasm_panel_shows_export_and_tracks_circuit_changes`<br>`qsim-gui/tests/test_qasm_panel.py::test_qasm_panel_reports_invalid_syntax_and_unsupported_subset`<br>`qsim-gui/tests/test_qasm_panel.py::test_qasm_panel_applies_valid_program_only_on_button_click` |
+| **FR-7.9** | Medium | Preferences shall select and persist the appearance theme | 2 | `qsim-gui/tests/test_preferences.py::test_preferences_lists_themes_and_saves_selected_theme`<br>`qsim-gui/tests/test_preferences.py::test_preferences_cancel_does_not_change_theme` |
+| **FR-7.10** | Medium | Dark and Dark Purple themes shall apply the flat appearance | 2 | `qsim-gui/tests/test_preferences.py::test_both_themes_use_dark_palette_and_distinct_accents`<br>`qsim-gui/tests/test_preferences.py::test_preferences_lists_themes_and_saves_selected_theme` |
 | **NFR-1.1** | High | On the reference hardware, a valid | 2 | `qsim-gui/tests/test_results_smoke.py::test_bell_state_run_results_panel`<br>`tests/acceptance/test_release_acceptance.py::test_performance_nfr_1_1_max_circuit_simulation` |
 | **NFR-1.2** | High | Circuit-edit handlers shall return | 2 | `libqsim/tests/test_operations.py::test_editing_performance_10_qubit_circuit`<br>`tests/acceptance/test_release_acceptance.py::test_performance_nfr_1_2_max_circuit_editing` |
 | **NFR-2.1** | High | A first-time user with no prior Open | 1 | `tests/acceptance/test_release_acceptance.py::test_offline_headless_and_gui_smoke_no_network` |

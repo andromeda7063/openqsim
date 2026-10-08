@@ -5,9 +5,10 @@ from pathlib import Path
 from libqsim.application.guarded import run_guarded
 from libqsim.application.operations import plan_resize, resize
 from libqsim.application.session import EditorSession, SaveStatus, SimulationStatus
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSettings, QSize, Qt
 from PySide6.QtGui import QAction, QCloseEvent, QImage
 from PySide6.QtWidgets import (
+    QApplication,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -23,7 +24,9 @@ from PySide6.QtWidgets import (
 from qsim_gui.commands import CommandActions
 from qsim_gui.dialogs import QtUserInterface, UserInterface
 from qsim_gui.help import HelpWindow, open_help_window
+from qsim_gui.preferences import PreferencesDialog
 from qsim_gui.state import SessionAdapter
+from qsim_gui.theme import Theme, apply_theme
 from qsim_gui.widgets.circuit_canvas import CircuitCanvas
 from qsim_gui.widgets.gate_palette import GatePalette
 from qsim_gui.widgets.qasm_panel import QasmPanel
@@ -40,6 +43,11 @@ class MainWindow(QMainWindow):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
+        self._settings = QSettings("OpenQSim", "OpenQSim")
+        self._theme = self._read_theme()
+        app = QApplication.instance()
+        if app is not None:
+            apply_theme(app, self._theme)
         if adapter is None:
             adapter = SessionAdapter(EditorSession())
         self._adapter = adapter
@@ -127,6 +135,11 @@ class MainWindow(QMainWindow):
         edit_menu.addAction(self._commands.action_clear)
         edit_menu.addSeparator()
         edit_menu.addAction(self._commands.action_change_target)
+        edit_menu.addSeparator()
+        self.action_preferences = QAction("Preferences...", self)
+        self.action_preferences.setObjectName("action_preferences")
+        self.action_preferences.triggered.connect(self._open_preferences)
+        edit_menu.addAction(self.action_preferences)
 
         # Simulate menu
         simulate_menu = menubar.addMenu("&Simulate")
@@ -242,9 +255,11 @@ class MainWindow(QMainWindow):
 
         self._save_status_label = QLabel("Save: Clean", self)
         self._save_status_label.setObjectName("save_status_label")
+        self._save_status_label.setProperty("status", "clean")
 
         self._sim_status_label = QLabel("Simulation: None", self)
         self._sim_status_label.setObjectName("sim_status_label")
+        self._sim_status_label.setProperty("status", "none")
 
         status_bar.addPermanentWidget(self._save_status_label)
         status_bar.addPermanentWidget(self._sim_status_label)
@@ -280,6 +295,26 @@ class MainWindow(QMainWindow):
                 self._ui.show_error("Resize Error", "\n".join(res.messages))
                 self._sync_qubit_spin()
 
+    def _read_theme(self) -> Theme:
+        try:
+            return Theme(self._settings.value("appearance/theme", Theme.DARK.value))
+        except ValueError:
+            return Theme.DARK
+
+    @property
+    def theme(self) -> Theme:
+        return self._theme
+
+    def _open_preferences(self) -> None:
+        dialog = PreferencesDialog(self._theme, self)
+        if dialog.exec() == PreferencesDialog.DialogCode.Accepted:
+            self._theme = dialog.selected_theme
+            self._settings.setValue("appearance/theme", self._theme.value)
+            self._settings.sync()
+            app = QApplication.instance()
+            if app is not None:
+                apply_theme(app, self._theme)
+
     def _sync_qubit_spin(self) -> None:
         if hasattr(self, "_qubit_spin"):
             self._qubit_spin.blockSignals(True)
@@ -299,29 +334,26 @@ class MainWindow(QMainWindow):
         # Save status indicator
         if self._adapter.save_status == SaveStatus.DIRTY:
             self._save_status_label.setText("Save: Dirty")
-            self._save_status_label.setStyleSheet(
-                "color: #c96000; font-weight: bold; padding: 2px 6px;"
-            )
+            self._save_status_label.setProperty("status", "dirty")
         else:
             self._save_status_label.setText("Save: Clean")
-            self._save_status_label.setStyleSheet("color: inherit; padding: 2px 6px;")
+            self._save_status_label.setProperty("status", "clean")
+        self._save_status_label.style().unpolish(self._save_status_label)
+        self._save_status_label.style().polish(self._save_status_label)
 
         # Simulation status indicator
         sim_status = self._adapter.simulation_status
         if sim_status == SimulationStatus.STALE:
             self._sim_status_label.setText("Simulation: Stale")
-            self._sim_status_label.setStyleSheet(
-                "color: #990000; font-weight: bold; background-color: #ffd6d6; "
-                "border: 1px solid #cc0000; border-radius: 3px; padding: 2px 6px;"
-            )
+            self._sim_status_label.setProperty("status", "stale")
         elif sim_status == SimulationStatus.CURRENT:
             self._sim_status_label.setText("Simulation: Current")
-            self._sim_status_label.setStyleSheet(
-                "color: #007700; font-weight: bold; padding: 2px 6px;"
-            )
+            self._sim_status_label.setProperty("status", "current")
         else:
             self._sim_status_label.setText("Simulation: None")
-            self._sim_status_label.setStyleSheet("color: inherit; padding: 2px 6px;")
+            self._sim_status_label.setProperty("status", "none")
+        self._sim_status_label.style().unpolish(self._sim_status_label)
+        self._sim_status_label.style().polish(self._sim_status_label)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """Handle window close event guarded by SaveStatus."""

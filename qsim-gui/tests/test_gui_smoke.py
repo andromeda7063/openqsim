@@ -7,7 +7,8 @@ import pytest
 from libqsim.application.operations import place_gate
 from libqsim.application.session import EditorSession, SimulationStatus
 from libqsim.domain.models import GateType
-from PySide6.QtWidgets import QApplication, QLabel, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QSplitter, QWidget
 from qsim_gui.dialogs import StubUserInterface
 from qsim_gui.main_window import MainWindow
 from qsim_gui.state import SessionAdapter
@@ -22,7 +23,7 @@ def qapp() -> Generator[QApplication]:
     yield app  # type: ignore[misc]
 
 
-@pytest.mark.req("NFR-2.3", "NFR-6.4")
+@pytest.mark.req("NFR-2.3", "NFR-6.4", "FR-7.7")
 def test_main_window_construction_and_regions(qapp: QApplication) -> None:
     session = EditorSession()
     adapter = SessionAdapter(session)
@@ -40,6 +41,17 @@ def test_main_window_construction_and_regions(qapp: QApplication) -> None:
     assert palette_region is not None
     assert canvas_region is not None
     assert results_region is not None
+
+    main_splitter = window.findChild(QSplitter, "main_splitter")
+    workspace_splitter = window.findChild(QSplitter, "workspace_splitter")
+    assert main_splitter is not None
+    assert workspace_splitter is not None
+    assert main_splitter.orientation() == Qt.Orientation.Vertical
+    assert main_splitter.widget(0) is workspace_splitter
+    assert main_splitter.widget(1) is results_region
+    assert isinstance(window.results_panel._content_widget.layout(), QHBoxLayout)
+    assert window.results_panel._bloch_view is not None
+    assert window.results_panel._histogram_view is not None
 
 
 @pytest.mark.req("FR-3.8")
@@ -73,8 +85,8 @@ def test_status_bar_indicators_and_stale_style(qapp: QApplication) -> None:
     assert adapter.simulation_status == SimulationStatus.STALE
 
     # Distinct "out of date" style must be applied
-    style = sim_label.styleSheet()
-    assert "background-color" in style or "color" in style
+    assert sim_label.property("status") == "stale"
+    assert 'QLabel#sim_status_label[status="stale"]' in qapp.styleSheet()
 
 
 @pytest.mark.req("NFR-2.2")

@@ -6,6 +6,9 @@ This guide walks through a 2-qubit Bell-state circuit.
 
 Launch the application.
 
+Open **Edit -> Preferences...** to choose **Dark** or **Dark Purple**. The
+selection is saved for the next launch.
+
 The compact gate palette is the vertical icon column at the left; hover over
 an icon to read its tooltip. The circuit uses conventional quantum gate
 symbols. The OpenQASM 2.0 editor is beside the canvas and simulation results

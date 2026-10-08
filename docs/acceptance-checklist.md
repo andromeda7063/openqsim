@@ -32,6 +32,13 @@ automated test runners.
 - [ ] Applying valid supported QASM to a dirty session offers Save, Don't Save, and Cancel; Cancel preserves the session.
 - [ ] Bloch spheres and the histogram appear side by side in the bottom results area.
 
+## Appearance Preferences (FR-7.9 to FR-7.10)
+
+- [ ] Open **Edit -> Preferences...** and confirm Dark and Dark Purple are available.
+- [ ] Choose Dark Purple and confirm the flat purple-accented theme updates across the window.
+- [ ] Close and relaunch OpenQSim; confirm the selected theme is retained.
+- [ ] Choose Dark and confirm the dark blue-accented theme is applied.
+
 ## 2. Window Management & Wayland Behavior (§18.8, NFR-2.7)
 
 - [ ] **Tiling Mode**:

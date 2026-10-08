@@ -30,7 +30,7 @@ class QasmPanel(QWidget):
         layout.setSpacing(6)
 
         title = QLabel("OpenQASM 2.0", self)
-        title.setStyleSheet("font-weight: bold;")
+        title.setObjectName("section_title")
         layout.addWidget(title)
 
         self.editor = QPlainTextEdit(self)
@@ -67,28 +67,36 @@ class QasmPanel(QWidget):
         source = self.editor.toPlainText()
         if not source.strip():
             self.status.setText("Enter OpenQASM 2.0 to check it.")
-            self.status.setStyleSheet("color: #666;")
+            self.status.setProperty("state", "empty")
             self.apply_button.setEnabled(False)
+            self._refresh_status_style()
             return
         try:
             qasm2.loads(source, strict=True)
         except QASM2Error as exc:
             self.status.setText(f"Syntax error: {exc}")
-            self.status.setStyleSheet("color: #990000;")
+            self.status.setProperty("state", "error")
             self.apply_button.setEnabled(False)
+            self._refresh_status_style()
             return
 
         try:
             import_text(source)
         except QasmError as exc:
             self.status.setText(f"Syntax valid; unsupported or invalid OpenQSim program: {exc}")
-            self.status.setStyleSheet("color: #9a6500;")
+            self.status.setProperty("state", "warning")
             self.apply_button.setEnabled(False)
+            self._refresh_status_style()
             return
 
         self.status.setText("OpenQASM syntax and supported subset are valid.")
-        self.status.setStyleSheet("color: #007700;")
+        self.status.setProperty("state", "valid")
         self.apply_button.setEnabled(True)
+        self._refresh_status_style()
+
+    def _refresh_status_style(self) -> None:
+        self.status.style().unpolish(self.status)
+        self.status.style().polish(self.status)
 
     def _apply_text(self) -> None:
         self._on_apply(self.editor.toPlainText())

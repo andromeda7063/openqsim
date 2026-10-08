@@ -13,6 +13,7 @@ UI
 ├── selection / copy / paste
 ├── visualisation
 └── command bindings and state indicators (views over the session layer)
+    └── application appearance and Preferences dialog
 
 Domain
 ├── Circuit
@@ -62,6 +63,11 @@ The `libqsim` package should not depend on PySide6.
 
 The GUI should communicate with the core through domain and application APIs
 rather than implementing quantum-circuit semantics inside widgets.
+
+The GUI owns appearance preferences. `qsim_gui.theme` applies the selected
+palette and flat widget styling, while `PreferencesDialog` edits the available
+theme. The theme name is stored with Qt's local `QSettings`; appearance does
+not affect the circuit session or its undo history.
 
 Save status, Simulation status, the saved baseline, undo/redo history, and the
 candidate/commit mutation pipeline belong to the application session layer in

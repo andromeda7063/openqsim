@@ -14,9 +14,7 @@ require network access.
 
 This file is the implementation requirements baseline. It is
 self-contained and does not depend on a private SRS being present in the
-public repository. The v1.0 baseline is preserved in
-[`docs/archive/requirements-v1.0.md`](archive/requirements-v1.0.md); this file
-contains the active v1.1 requirements.
+public repository.
 
 ## 2. Scope
 
@@ -38,12 +36,7 @@ Open QSim shall provide:
 10. Local `.qcs` JSON session files.
 11. OpenQASM 2.0 import and export for the explicitly supported subset.
 12. A non-GUI simulation API suitable for automated testing.
-13. A compact symbolic gate palette with tooltips.
-14. An editable OpenQASM 2.0 view synchronized with the circuit, with syntax
-    checking and explicit application of valid supported programs.
-15. Local user documentation and gate tooltips.
-16. Flat dark and dark-purple application themes, configurable from a
-    Preferences window and retained between launches.
+13. Local user documentation and gate tooltips.
 
 The 50-column editor limit is release-specific. The canvas may scroll within
 the release; a future revision may remove the finite 50-column limit
@@ -707,81 +700,81 @@ current file path and establish the current circuit as the clean baseline.
   ID                      Requirement             Priority
   ----------------------- ----------------------- -----------------------
   FR-4.1                  The system shall        High
-                          display one Bloch       
-                          sphere for each qubit.  
+                          display one Bloch
+                          sphere for each qubit.
 
   FR-4.2                  Each Bloch sphere shall High
-                          identify the qubit to   
-                          which it corresponds.   
+                          identify the qubit to
+                          which it corresponds.
 
   FR-4.3                  Each Bloch sphere shall High
-                          show the X, Y, and Z    
-                          axes.                   
+                          show the X, Y, and Z
+                          axes.
 
   FR-4.4                  The reduced Bloch       High
-                          vector shall be         
-                          rendered as a point     
-                          within or on the unit   
-                          sphere.                 
+                          vector shall be
+                          rendered as a point
+                          within or on the unit
+                          sphere.
 
   FR-4.5                  A pure single-qubit     Medium
-                          state shall be          
-                          represented on the      
-                          sphere surface within   
-                          numerical tolerance.    
+                          state shall be
+                          represented on the
+                          sphere surface within
+                          numerical tolerance.
 
   FR-4.6                  A mixed reduced state   High
-                          may be represented      
-                          inside the sphere.      
+                          may be represented
+                          inside the sphere.
 
   FR-4.7                  The system shall        High
-                          display the full        
-                          computational-basis     
-                          probability             
-                          distribution as a       
-                          histogram containing    
-                          2\^n basis states.      
+                          display the full
+                          computational-basis
+                          probability
+                          distribution as a
+                          histogram containing
+                          2\^n basis states.
 
   FR-4.8                  Histogram basis-state   High
-                          labels shall follow the 
-                          defined                 
-                          Qiskit-compatible bit   
-                          ordering.               
+                          labels shall follow the
+                          defined
+                          Qiskit-compatible bit
+                          ordering.
 
   FR-4.9                  Histogram values shall  High
-                          represent probabilities 
-                          and shall be            
-                          numerically normalised  
-                          to sum to 1 within      
-                          tolerance.              
+                          represent probabilities
+                          and shall be
+                          numerically normalised
+                          to sum to 1 within
+                          tolerance.
 
   FR-4.10                 Bloch-sphere and        High
-                          histogram views shall   
-                          refresh after a         
-                          successful Run.         
+                          histogram views shall
+                          refresh after a
+                          successful Run.
 
   FR-4.11                 The system shall allow  Medium
-                          the user to export the  
-                          circuit diagram as a    
-                          PNG file.               
+                          the user to export the
+                          circuit diagram as a
+                          PNG file.
 
   FR-4.12                 The system shall allow  Medium
-                          the user to export the  
-                          Bloch-sphere view as a  
-                          PNG file.               
+                          the user to export the
+                          Bloch-sphere view as a
+                          PNG file.
 
   FR-4.13                 The system shall allow  Medium
-                          the user to export the  
-                          histogram view as a PNG 
-                          file.                   
+                          the user to export the
+                          histogram view as a PNG
+                          file.
 
   FR-4.14                 The interface shall     Medium
-                          provide concise         
-                          explanatory text or     
-                          tooltips describing     
-                          what the Bloch sphere   
-                          and histogram           
-                          represent.              
+                          provide concise
+                          explanatory text or
+                          tooltips describing
+                          what the Bloch sphere
+                          and histogram
+                          represent.
   -----------------------------------------------------------------------
 
 ## 10. Session management
@@ -1033,63 +1026,38 @@ The importer shall reject:
   ID                      Requirement             Priority
   ----------------------- ----------------------- -----------------------
   FR-7.1                  The application shall   Medium
-                          provide a Quick Start   
-                          guide showing           
-                          construction and        
-                          simulation of a 2-qubit 
-                          Bell state.             
+                          provide a Quick Start
+                          guide showing
+                          construction and
+                          simulation of a 2-qubit
+                          Bell state.
 
   FR-7.2                  The Quick Start guide   Medium
-                          shall be sufficient for 
-                          a first-time user to    
-                          complete the Bell-state 
-                          workflow within the     
-                          5-minute usability      
-                          target.                 
+                          shall be sufficient for
+                          a first-time user to
+                          complete the Bell-state
+                          workflow within the
+                          5-minute usability
+                          target.
 
   FR-7.3                  Each gate in the        Medium
-                          palette shall have a    
-                          concise tooltip         
-                          describing its          
-                          function.               
+                          palette shall have a
+                          concise tooltip
+                          describing its
+                          function.
 
   FR-7.4                  The application shall   Medium
-                          provide concise         
-                          explanations of the     
-                          Bloch sphere and        
-                          probability histogram.  
+                          provide concise
+                          explanations of the
+                          Bloch sphere and
+                          probability histogram.
 
   FR-7.5                  The application shall   Medium
-                          provide user            
-                          documentation for the   
-                          `.qcs` schema and       
-                          supported OpenQASM 2.0  
-                          subset.                 
-  FR-7.6                  The circuit editor shall display standard gate symbols
-                          on the circuit, and the compact gate palette shall
-                          present symbolic icons with a tooltip for each gate.
-                          The palette shall be arranged vertically.
-
-  FR-7.7                  The main window shall place simulation results below
-                          the circuit workspace, with the Bloch and probability
-                          views available side by side.
-
-  FR-7.8                  The main window shall show an editable OpenQASM 2.0
-                          editor beside the circuit canvas. It shall display a
-                          deterministic export of the current circuit, check
-                          syntax as the text changes, report syntax and
-                          supported-subset errors, and apply valid supported
-                          programs to the circuit when requested.
-  FR-7.9                  The application shall provide a Preferences window
-                          reachable from the Edit menu. It shall allow users
-                          to choose an appearance theme and persist the choice
-                          between launches.
-
-  FR-7.10                 The application shall provide Dark and Dark Purple
-                          themes with a flat, modern visual style. The chosen
-                          theme shall apply to the main window, editor panels,
-                          Preferences window, and custom-painted circuit and
-                          result views.
+                          provide user
+                          documentation for the
+                          `.qcs` schema and
+                          supported OpenQASM 2.0
+                          subset.
   -----------------------------------------------------------------------
 
 ## 13. Non-functional requirements
@@ -1155,13 +1123,10 @@ The importer shall reject:
                           horizontally and vertically. At
                           1920x1080 with the window filling
                           the screen, the palette, the
-                          scrollable canvas, OpenQASM
-                          editor, and access to the
-                          Bloch-sphere and histogram views
-                          shall all be available in the
-                          same window. Simulation results
-                          shall appear below the workspace.
-                          Drag/drop,
+                          scrollable canvas, and access to
+                          the Bloch-sphere and histogram
+                          views shall all be available in
+                          the same window. Drag/drop,
                           selection, paste, and arrow-key
                           movement shall behave identically
                           for cells reached by scrolling,
@@ -1202,21 +1167,21 @@ The importer shall reject:
   ID                      Requirement             Priority
   ----------------------- ----------------------- -----------------------
   NFR-4.1                 The application shall   High
-                          perform no network      
-                          communication during    
-                          normal operation.       
+                          perform no network
+                          communication during
+                          normal operation.
 
   NFR-4.2                 The application shall   High
-                          not transmit circuit    
-                          data, simulation data,  
-                          or user-created files   
-                          to external services.   
+                          not transmit circuit
+                          data, simulation data,
+                          or user-created files
+                          to external services.
 
   NFR-4.3                 No user account,        High
-                          authentication system,  
-                          or remote access        
-                          mechanism shall be      
-                          required.               
+                          authentication system,
+                          or remote access
+                          mechanism shall be
+                          required.
   -----------------------------------------------------------------------
 
 ### 13.5 Maintainability
@@ -1225,21 +1190,21 @@ The importer shall reject:
   ID                      Requirement                     Priority
   ----------------------- ------------------------------- -----------------------
   NFR-5.1                 The circuit domain model and    High
-                          simulation layer shall not      
-                          depend on PySide6 UI classes.   
+                          simulation layer shall not
+                          depend on PySide6 UI classes.
 
   NFR-5.2                 Circuit validation shall be     High
-                          callable independently of the   
-                          GUI.                            
+                          callable independently of the
+                          GUI.
 
   NFR-5.3                 QCS                             Medium
-                          serialization/deserialization   
-                          shall be callable independently 
-                          of the GUI.                     
+                          serialization/deserialization
+                          shall be callable independently
+                          of the GUI.
 
   NFR-5.4                 OpenQASM parsing and generation Medium
-                          shall be callable independently 
-                          of the GUI.                     
+                          shall be callable independently
+                          of the GUI.
 
   NFR-5.5                 The application session layer    High
                           (current circuit, saved
@@ -1282,46 +1247,46 @@ The importer shall reject:
   ID                      Requirement             Priority
   ----------------------- ----------------------- -----------------------
   NFR-7.1                 Every supported gate    High
-                          operation shall be      
-                          unit-testable           
-                          independently of the    
-                          GUI.                    
+                          operation shall be
+                          unit-testable
+                          independently of the
+                          GUI.
 
   NFR-7.2                 Gate matrix definitions High
-                          shall be testable       
-                          against known reference 
-                          matrices.               
+                          shall be testable
+                          against known reference
+                          matrices.
 
   NFR-7.3                 The simulation engine   High
-                          shall expose a non-GUI  
-                          API that accepts a      
-                          circuit and returns     
-                          simulation results.     
+                          shall expose a non-GUI
+                          API that accepts a
+                          circuit and returns
+                          simulation results.
 
   NFR-7.4                 Validation shall be     High
-                          independently testable  
-                          using valid and invalid 
-                          circuit fixtures.       
+                          independently testable
+                          using valid and invalid
+                          circuit fixtures.
 
   NFR-7.5                 QCS round trips shall   High
-                          be independently        
-                          testable without        
-                          launching the GUI.      
+                          be independently
+                          testable without
+                          launching the GUI.
 
   NFR-7.6                 OpenQASM import and     High
-                          export shall be         
-                          independently testable  
-                          without launching the   
-                          GUI.                    
+                          export shall be
+                          independently testable
+                          without launching the
+                          GUI.
 
   NFR-7.7                 Floating-point          High
-                          comparison of           
-                          simulation-derived      
-                          values shall use an     
-                          absolute tolerance of   
-                          1e-9 unless a test      
-                          explicitly specifies a  
-                          stricter tolerance.     
+                          comparison of
+                          simulation-derived
+                          values shall use an
+                          absolute tolerance of
+                          1e-9 unless a test
+                          explicitly specifies a
+                          stricter tolerance.
 
   NFR-7.8                 Application-state         High
                           transitions in Section
@@ -1382,9 +1347,6 @@ The main window shall provide:
 
 -   gate palette;
 -   circuit canvas with 1--10 qubits and 50 columns;
--   editable OpenQASM 2.0 panel beside the circuit canvas;
--   simulation results below the workspace, with Bloch spheres and the
-    probability histogram side by side;
 -   Bloch-sphere visualisation;
 -   probability histogram;
 -   New;
@@ -1399,17 +1361,6 @@ The main window shall provide:
 -   visible Save status (`Clean` or `Dirty`);
 -   visible Simulation status (`None`, `Current`, or `Stale`);
 -   the standard error presentation mechanism.
-
-The gate palette shall be a compact vertical column of symbolic icons. Each
-icon shall have an accessible name and a tooltip describing the gate. Circuit
-gates shall use conventional quantum-circuit notation, including control dots,
-target circled-plus symbols, and the measurement marker.
-
-The OpenQASM editor shall display the current circuit's canonical OpenQASM
-representation. Editing the text shall not modify the circuit until the user
-applies it. Syntax feedback shall use Qiskit's OpenQASM 2 parser; the app's
-supported-subset importer shall then determine whether the program can be
-applied. Invalid text shall leave the circuit and session state unchanged.
 
 The circuit canvas shall provide a clear grid position for each
 wire/column cell so that drag/drop, paste anchoring, and arrow-key
@@ -1665,8 +1616,8 @@ The implementation shall include automated tests for at least:
 
   Headless session tests              Section 6.5 transitions run without Qt
 
-  Layout at 1920x1080                 palette, scrollable canvas, OpenQASM
-                                      editor, and bottom results in one window
+  Layout at 1920x1080                 palette, scrollable canvas, and
+                                      results reachable in one window
 
   Wayland interaction                 drag/drop, shortcuts, dialogs, PNG
                                       export work; tiled and floating

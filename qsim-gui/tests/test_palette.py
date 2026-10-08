@@ -5,7 +5,7 @@ from collections.abc import Generator
 
 import pytest
 from libqsim.domain.models import GateType
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QVBoxLayout
 from qsim_gui.widgets.gate_palette import (
     GATE_MIME_TYPE,
     GatePalette,
@@ -23,11 +23,12 @@ def qapp() -> Generator[QApplication]:
     yield app  # type: ignore[misc]
 
 
-@pytest.mark.req("FR-1.4", "FR-7.3")
+@pytest.mark.req("FR-1.4", "FR-7.3", "FR-7.6")
 def test_palette_contains_exactly_nine_items_with_tooltips(qapp: QApplication) -> None:
     palette = GatePalette()
     items = palette.items()
 
+    assert isinstance(palette.layout(), QVBoxLayout)
     assert len(items) == 9
 
     expected_gates = [
@@ -44,6 +45,17 @@ def test_palette_contains_exactly_nine_items_with_tooltips(qapp: QApplication) -
 
     found_gates = [gate for gate, _ in items]
     assert found_gates == expected_gates
+    assert [button.text() for button in palette._buttons] == [
+        "H",
+        "X",
+        "Y",
+        "Z",
+        "S",
+        "T",
+        "⊕",
+        "••⊕",
+        "M",
+    ]
 
     for gate, tooltip in items:
         assert isinstance(tooltip, str)
