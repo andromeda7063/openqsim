@@ -44,6 +44,7 @@ Open QSim shall provide:
 15. Local user documentation and gate tooltips.
 16. Flat dark and dark-purple application themes, configurable from a
     Preferences window and retained between launches.
+17. A fixed, offline library of five editable example circuits.
 
 The 50-column editor limit is release-specific. The canvas may scroll within
 the release; a future revision may remove the finite 50-column limit
@@ -296,12 +297,13 @@ Measurement has deliberately simplified semantics in this release:
   FR-1.13                 Each successful circuit mutation shall    High
                           create exactly one undo-history entry.
 
-  FR-1.14                 Run, Save, Save As, Load/Open, Import,    High
-                          Export, selection changes, and other
+  FR-1.14                 Run, Save, Save As, Load/Open, Load       High
+                          Example, Import, Export, selection changes, and other
                           non-mutating UI operations shall not create
                           undo-history entries.
 
-  FR-1.15                 A successful New, Load/Open, or Import     High
+  FR-1.15                 A successful New, Load/Open, Load       High
+                          Example, or Import
                           operation shall clear both undo and redo
                           history. A failed operation shall not clear
                           history.
@@ -524,16 +526,16 @@ Simulation status becomes `None`, clears trace navigation, and clears both
 undo and redo history. The
 `.qasm` file never becomes the session file.
 
-**LC-11.** A failed Load/Open or Import OpenQASM operation leaves the current
+**LC-11.** A failed Load/Open, Import OpenQASM, or Load Example operation leaves the current
 circuit, Save status, Simulation status, and undo/redo history exactly
 unchanged, and reports the failure using the standard error mechanism.
 
-**LC-12.** When New, Load/Open, Import OpenQASM, or application Exit is
+**LC-12.** When New, Load/Open, Import OpenQASM, Load Example, or application Exit is
 requested while Save status is `Dirty`, the user shall receive exactly three
 choices: `Save`, `Don't Save`, and `Cancel`.
 
 **LC-13.** `Save` shall first perform a successful save. If the save fails,
-the requested New/Load/Import/Exit operation shall not proceed and the
+the requested New/Load/Import/Load Example/Exit operation shall not proceed and the
 current state shall remain unchanged. If the save succeeds, the requested
 operation shall then proceed.
 
@@ -549,6 +551,13 @@ dialog.
 
 **LC-17.** A successful Save As shall establish the selected path as the
 current file path and establish the current circuit as the clean baseline.
+
+**LC-18.** A successful Load Example operation shall replace the current
+session with the selected circuit, set the file path and saved baseline to
+absent, set Save status to `Dirty`, clear simulation results so Simulation
+status becomes `None`, and clear undo/redo history. If the current session is
+dirty, the operation shall follow LC-12 to LC-15. A failed operation shall
+leave the complete prior state unchanged.
 
 ### 6.6 Editing clarifications
 
@@ -881,7 +890,7 @@ The schema shall not contain simulation results.
                           exposing raw exceptions.
 
   FR-5.11                 The system shall warn the user before New,   Medium
-                          Load, Import OpenQASM, or application Exit when Save status is
+                          Load, Import OpenQASM, Load Example, or application Exit when Save status is
                           `Dirty`, using exactly the choices `Save`,
                           `Don't Save`, and `Cancel`, with the lifecycle
                           behavior defined in Section 6.5.
@@ -923,6 +932,34 @@ The schema shall not contain simulation results.
                           order: placements by increasing
                           column, then lowest occupied
                           qubit, with `controls` ascending.
+
+  FR-5.19                 The application shall provide     Medium
+                          named built-in example circuits
+                          with concise descriptions.
+
+  FR-5.20                 The user shall be able to load    Medium
+                          a selected built-in example as
+                          the current circuit.
+
+  FR-5.21                 A loaded example shall have no    High
+                          file path or saved baseline and
+                          Save status `Dirty`.
+
+  FR-5.22                 Loading an example shall clear   High
+                          simulation results and set
+                          Simulation status to `None`.
+
+  FR-5.23                 Loading an example shall clear   High
+                          undo and redo history.
+
+  FR-5.24                 A dirty-session example load     High
+                          shall offer exactly `Save`,
+                          `Don't Save`, and `Cancel` and
+                          follow LC-12 to LC-15.
+
+  FR-5.25                 A failed example load shall      High
+                          leave the complete prior session
+                          state unchanged.
   -----------------------------------------------------------------------
 
 ## 11. OpenQASM 2.0 interoperability
@@ -1251,7 +1288,11 @@ The importer shall reject:
                           authentication system,  
                           or remote access        
                           mechanism shall be      
-                          required.               
+                          required.
+
+  NFR-4.4                 Built-in example       High
+                          circuits shall be
+                          available offline.
   -----------------------------------------------------------------------
 
 ### 13.5 Maintainability
@@ -1363,6 +1404,11 @@ The importer shall reject:
                           6.5 shall be testable
                           without constructing Qt
                           objects.
+
+  NFR-7.9                 Every bundled example       High
+                          shall be independently
+                          loadable and pass normal
+                          circuit validation.
   -----------------------------------------------------------------------
 
 ## 14. Data requirements
@@ -1606,8 +1652,11 @@ The implementation shall include automated tests for at least:
                                       no file path; Simulation=`None`;
                                       undo/redo history cleared
 
-  Failed Load/Import                  complete pre-operation application
+  Failed Load/Import/Example          complete pre-operation application
                                       state unchanged
+
+  Dirty example prompt                Save/Don't Save/Cancel; Cancel and
+                                      failed Save preserve original session
 
   Failed Run                          previous result and its status
                                       unchanged; circuit unchanged
@@ -1677,6 +1726,15 @@ The implementation shall include automated tests for at least:
 
   Keyboard shortcuts                  each of FR-1.31 to FR-1.44 works
 
+  Each bundled example                independently loadable, valid, and
+                                      simulatable using the normal API
+
+  Built-in example catalog            Five named examples, each described,
+                                      loadable, and valid offline
+
+  Load Example                         Dirty prompt; success is Dirty, has no
+                                      path/baseline, clears simulation/history
+
   QASM cx/ccx argument order          controls first, target last on import
                                       and export
 
@@ -1733,8 +1791,10 @@ The release shall be accepted only when all of the following are true:
 -   Arrow keys move selections by exactly one grid cell per press.
 -   Undo/redo works for every successful circuit mutation and follows the
     saved-baseline rules.
--   New/Load/Import clear undo/redo history only after successful
+-   New/Load/Import/Load Example clear undo/redo history only after successful
     completion.
+-   The five built-in examples have useful names/descriptions, validate, and
+    can be loaded, run, edited, exported, and saved with Save As offline.
 -   Qubit resizing follows the confirmation rules and records a
     destructive resize as one mutation.
 -   Validation prevents invalid circuits from reaching simulation.
@@ -1756,11 +1816,11 @@ The release shall be accepted only when all of the following are true:
     `Stale`.
 -   Successful Run makes Simulation=`Current` without changing Save status.
 -   Failed Run leaves the previous result and its Simulation status unchanged.
--   Successful New/Load sets Save=`Clean`; successful Import sets
-    Save=`Dirty` (new unsaved session); both set Simulation=`None` and
-    clear history.
+-   Successful New/Load sets Save=`Clean`; successful Import and Load Example set
+    Save=`Dirty` (new unsaved session); each clears Simulation to `None` and
+    clears history. Load Example also has no path or baseline.
 -   Failed Load/Import leaves the complete pre-operation state unchanged.
--   Dirty New/Load/Import/Exit prompts offer exactly `Save`, `Don't Save`, and
+-   Dirty New/Load/Import/Load Example/Exit prompts offer exactly `Save`, `Don't Save`, and
     `Cancel` with the required behavior.
 
 ### 18.3 Simulation acceptance
@@ -1817,6 +1877,11 @@ dependency versions. Other platforms are not part of release acceptance.
                                                   deterministic-order tests
 
   FR-7                    Documentation/UI        Usability inspection
+
+  FR-5.19 to FR-5.25, LC-18  Example catalog, session operation, GUI menu
+                             Catalog/session/GUI lifecycle tests
+
+  NFR-4.4, NFR-7.9          Bundled catalog        Offline and validation tests
 
   NFR-1                   Simulator/editor        Performance tests
 
@@ -1913,9 +1978,9 @@ The following decisions are normative for the current release:
 11. A new mutation after Undo clears the redo history.
 12. Every successful circuit mutation creates exactly one undo-history
     entry.
-13. Run, Save, Save As, Load, Import, Export, and selection changes do not
+13. Run, Save, Save As, Load, Load Example, Import, Export, and selection changes do not
     create undo-history entries.
-14. Successful New, Load, and Import clear undo/redo history; failed
+14. Successful New, Load, Load Example, and Import clear undo/redo history; failed
     operations do not.
 15. Successful New and Load establish the resulting circuit as `Clean`; a
     successful Import creates a new unsaved session that is `Dirty`. All
@@ -1924,12 +1989,12 @@ The following decisions are normative for the current release:
 17. Run changes only simulation state; it does not affect Save status.
 18. A failed Run leaves any previous result and its Simulation status
     unchanged.
-19. Load/Open and Import are atomic; failure leaves the complete prior
+19. Load/Open, Import, and Load Example are atomic; failure leaves the complete prior
     application state unchanged.
 20. Save and Save As establish the current circuit as the clean baseline
     after successful completion.
 21. Save on a never-saved circuit opens a file-save dialog.
-22. Dirty New, Load, Import, and Exit use exactly `Save`, `Don't Save`, and `Cancel`.
+22. Dirty New, Load, Import, Load Example, and Exit use exactly `Save`, `Don't Save`, and `Cancel`.
 23. Invalid drag/drop, movement, multi-selection movement, and paste are
     rejected atomically, show the standard error message, and create no
     undo entry.
@@ -1967,17 +2032,18 @@ The following decisions are normative for the current release:
 41. The public requirements document shall contain no private SRS content
     beyond the functional decisions necessary to implement and verify Open
     QSim.
-42. The application always edits a `.qcs` session. Import OpenQASM creates
+42. Load Example is distinct from Load/Open `.qcs`: it loads one of five fixed bundled circuits as an unsaved session with no path or baseline (`Dirty`), clears simulation and history, and uses the dirty-session prompt. The catalog is offline; examples are editable and can be saved with Save As. User-managed examples are out of scope.
+43. The application always edits a `.qcs` session. Import OpenQASM creates
     a new unsaved session (`Dirty`, no file path, no saved baseline); the
     `.qasm` file never becomes the session file.
-43. A session with no saved baseline is always `Dirty`.
-44. Circuit equality ignores the order of placements and of control indices.
-45. An operation that leaves the circuit definition unchanged is not a
+44. A session with no saved baseline is always `Dirty`.
+45. Circuit equality ignores the order of placements and of control indices.
+46. An operation that leaves the circuit definition unchanged is not a
     mutation.
-46. A newly dropped CNOT or Toffoli has its controls on the upper wires and
+47. A newly dropped CNOT or Toffoli has its controls on the upper wires and
     its target on the bottom wire; a Change target command alters the
     target wire.
-47. The sole tested platform is CachyOS (Arch based) under Hyprland/Wayland
+48. The sole tested platform is CachyOS (Arch based) under Hyprland/Wayland
     on the reference laptop at 1920x1080; Windows, macOS, and other Linux
     distributions are not claimed in this release.
 
@@ -1998,7 +2064,7 @@ This revision resolves inconsistencies found in review:
     command were added (FR-1.49, FR-1.50).
 -   The application always edits a `.qcs` session. Import OpenQASM creates a
     new unsaved session (`Dirty`) and, like New, Load, and Exit, prompts when
-    Save status is `Dirty` (LC-10, LC-12).
+    Save status is `Dirty` (LC-10, LC-12, LC-18).
 -   Circuit equality is defined over a canonical form (Section 14.1).
 -   A failed Run leaves the previous result and its status unchanged (LC-8).
 -   Lifecycle rules received IDs (LC-1 to LC-17) and Section 6.5 governs when

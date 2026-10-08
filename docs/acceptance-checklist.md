@@ -88,6 +88,16 @@ automated test runners.
 
 ## 4. Native File Dialogs & Session Lifecycle (§18.1, §18.2, LC-12 to LC-17)
 
+### Built-in examples (FR-5.19 to FR-5.25, LC-18)
+
+- [ ] The **Examples** menu lists Bell state, GHZ state, Interference, Phase demonstration, and Toffoli demonstration; each has a useful concise description.
+- [ ] Load each example and confirm its expected circuit is displayed, validates, and runs.
+- [ ] Confirm each loaded example has `Save: Dirty`, `Simulation: None`, no file path, and no saved baseline; Undo and Redo are unavailable.
+- [ ] From a dirty session, loading an example offers exactly **Save**, **Don't Save**, and **Cancel**.
+- [ ] Cancel preserves the original circuit and session state; a failed Save prevents loading.
+- [ ] Save As writes a loaded example as `.qcs`, after which Save status is `Clean`.
+- [ ] Disconnect the network and confirm examples remain available.
+
 - [ ] **Save as New File** (`Ctrl+S`):
   - Since circuit has no saved path, native file-save dialog opens with `.qcs` filter.
   - Save as `test_bell.qcs`.

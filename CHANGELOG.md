@@ -4,6 +4,8 @@ Changes on `v1.1-dev` relative to `main` (v1.0):
 
 ## v1.1 (in development)
 
+- Added a fixed offline library of five editable circuit examples. Loading an
+  example uses the dirty-session prompt and creates a new unsaved session.
 - Reworked the circuit workspace with a compact vertical palette of symbolic
   gate buttons, a canvas-centered layout, and simulation results below the
   workspace with Bloch and histogram views side by side.

@@ -12,6 +12,7 @@ from libqsim.application.operations import (
     paste,
 )
 from libqsim.application.session import SaveStatus
+from libqsim.examples import CircuitExample
 from libqsim.qasm.importer import QasmError, import_text
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QWidget
@@ -287,6 +288,29 @@ class CommandActions:
             choice = self._ui.prompt_save_changes(
                 "Unsaved Changes",
                 "Save changes before creating a new circuit?",
+            )
+        guarded_ok = run_guarded(self._adapter.session, choice, self.handle_save, action)
+        return guarded_ok and success
+
+    def handle_load_example(self, example: CircuitExample) -> bool:
+        """Load a built-in example as a new unsaved session."""
+        success = False
+
+        def action() -> bool:
+            nonlocal success
+            outcome = self._adapter.session.load_example(example)
+            if not outcome.ok:
+                self._ui.show_error("Load Example Error", outcome.message)
+                return False
+            if self._selection_controller is not None:
+                self._selection_controller.clear_selection()
+            success = True
+            return True
+
+        choice = None
+        if self._adapter.save_status == SaveStatus.DIRTY:
+            choice = self._ui.prompt_save_changes(
+                "Unsaved Changes", "Save changes before loading an example?"
             )
         guarded_ok = run_guarded(self._adapter.session, choice, self.handle_save, action)
         return guarded_ok and success

@@ -21,6 +21,16 @@ A new application starts with:
 - Save status `Clean`;
 - Simulation status `None`.
 
+## Load an example
+
+Open the **Examples** menu and choose one of the five circuits. Each entry
+shows a short description in its tooltip. Loading an example replaces the
+current circuit and opens it as an unsaved session (`Save: Dirty`,
+`Simulation: None`). If your current session is dirty, choose **Save**,
+**Don't Save**, or **Cancel**. Examples are editable; use **Save As** to keep
+one as a `.qcs` file. Try **Bell state**, then Run to inspect its entangled
+output.
+
 ## 2. Add an H Gate
 
 Add an `H` gate to qubit 0 in the first available column.

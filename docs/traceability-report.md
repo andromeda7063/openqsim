@@ -2,13 +2,13 @@
 
 ## 1. Executive Summary
 
-- **Total Requirements Defined**: 184
-  - **High Priority (FR, NFR, LC)**: 124
-  - **Medium Priority**: 60
-- **Total Tests Collected**: 212
-- **Requirements Covered**: 184 / 184 (100.0%)
-- **High-Priority Coverage**: 124 / 124 (100.0%)
-- **Medium-Priority Coverage**: 60 / 60 (100.0%)
+- **Total Requirements Defined**: 194
+  - **High Priority (FR, NFR, LC)**: 137
+  - **Medium Priority**: 57
+- **Total Tests Collected**: 337
+- **Requirements Covered**: 194 / 194 (100.0%)
+- **High-Priority Coverage**: 137 / 137 (100.0%)
+- **Medium-Priority Coverage**: 57 / 57 (100.0%)
 
 ## 2. Coverage Gaps
 
@@ -18,8 +18,7 @@
 
 ### Medium-Priority Requirements with NO Test
 
-**None.** All current medium-priority requirements have automated test
-coverage.
+**None.** All Medium-priority requirements (100%) have automated test coverage.
 
 ## 3. Full Traceability Matrix
 
@@ -30,8 +29,8 @@ coverage.
 | **FR-1.11** | High | The system shall re-render the circuit | 2 | `qsim-gui/tests/test_canvas_smoke.py::test_canvas_renders_sample_circuit_not_blank`<br>`qsim-gui/tests/test_canvas_smoke.py::test_canvas_re_renders_on_circuit_mutation` |
 | **FR-1.12** | High | The system shall support undo and redo of | 7 | 7 tests (e.g. `libqsim/tests/test_history.py::test_history_initial_state`<br>`libqsim/tests/test_history.py::test_history_push_and_undo_redo`<br>`libqsim/tests/test_history.py::test_history_push_clears_redo` ...) |
 | **FR-1.13** | High | Each successful circuit mutation shall | 5 | 5 tests (e.g. `libqsim/tests/test_history.py::test_history_initial_state`<br>`libqsim/tests/test_history.py::test_history_push_and_undo_redo`<br>`libqsim/tests/test_session.py::test_lc2_mutation_and_stale` ...) |
-| **FR-1.14** | High | Run, Save, Save As, Load/Open, Import, | 3 | `libqsim/tests/test_session.py::test_lc9_lc10_lc6_lifecycle_primitives`<br>`libqsim/tests/test_session_qasm.py::test_session_export_qasm_preserves_statuses_and_history`<br>`qsim-gui/tests/test_selection_controller.py::test_selection_does_not_change_session_history_or_status` |
-| **FR-1.15** | High | A successful New, Load/Open, or Import | 3 | `libqsim/tests/test_history.py::test_history_clear`<br>`libqsim/tests/test_session.py::test_lc9_lc10_lc6_lifecycle_primitives`<br>`tests/acceptance/test_release_acceptance.py::test_section17_undo_redo_baseline_equality` |
+| **FR-1.14** | High | Run, Save, Save As, Load/Open, Load | 3 | `libqsim/tests/test_session.py::test_lc9_lc10_lc6_lifecycle_primitives`<br>`libqsim/tests/test_session_qasm.py::test_session_export_qasm_preserves_statuses_and_history`<br>`qsim-gui/tests/test_selection_controller.py::test_selection_does_not_change_session_history_or_status` |
+| **FR-1.15** | High | A successful New, Load/Open, Load | 3 | `libqsim/tests/test_history.py::test_history_clear`<br>`libqsim/tests/test_session.py::test_lc9_lc10_lc6_lifecycle_primitives`<br>`tests/acceptance/test_release_acceptance.py::test_section17_undo_redo_baseline_equality` |
 | **FR-1.16** | High | Increasing the qubit count shall add | 4 | 4 tests (e.g. `libqsim/tests/test_operations.py::test_plan_resize`<br>`libqsim/tests/test_operations.py::test_resize_operations`<br>`qsim-gui/tests/test_clipboard_resize.py::test_qubit_count_increase_in_main_window` ...) |
 | **FR-1.17** | High | If decreasing the qubit count would | 4 | 4 tests (e.g. `libqsim/tests/test_operations.py::test_plan_resize`<br>`libqsim/tests/test_operations.py::test_resize_operations`<br>`qsim-gui/tests/test_clipboard_resize.py::test_destructive_resize_confirmation_and_cancel_snapback` ...) |
 | **FR-1.18** | High | If the user cancels a destructive resize, | 3 | `libqsim/tests/test_operations.py::test_resize_operations`<br>`qsim-gui/tests/test_clipboard_resize.py::test_destructive_resize_confirmation_and_cancel_snapback`<br>`tests/acceptance/test_release_acceptance.py::test_section17_destructive_resize_confirmation` |
@@ -91,10 +90,10 @@ coverage.
 | **FR-3.1** | High | The system shall simulate every valid | 16 | 16 tests (e.g. `libqsim/tests/test_simulation.py::test_single_qubit_reference_circuits`<br>`libqsim/tests/test_simulation.py::test_s_and_t_phases_on_plus_state`<br>`libqsim/tests/test_simulation.py::test_bell_state_probabilities` ...) |
 | **FR-3.10** | High | Measurement markers shall not alter the | 2 | `libqsim/tests/test_simulation.py::test_measurement_ignored_by_simulation`<br>`tests/acceptance/test_release_acceptance.py::test_section17_measurement_rules_and_ignored_in_simulation` |
 | **FR-3.11** | High | Run shall execute synchronously on the | 1 | `tests/acceptance/test_release_acceptance.py::test_offline_headless_and_gui_smoke_no_network` |
-| **FR-3.12** | High | A failed Run shall leave the current circuit | 4 | `libqsim/tests/test_session.py::test_lc8_failing_simulation`<br>`libqsim/tests/test_session.py::test_lc8_invalid_circuit_run_refuses_simulation`<br>`libqsim/tests/test_session.py::test_trace_navigation_stale_retention_and_failed_run_preservation`<br>`qsim-gui/tests/test_results_smoke.py::test_failing_run_preserves_previous_result_and_status` |
-| **FR-3.13** | High | A successful Run shall retain an initial state and display trace | 1 | `libqsim/tests/test_simulation.py::test_simulation_trace_initial_occupied_columns_and_measurement` |
-| **FR-3.14** | High | Gates in a column execute together; only occupied columns create steps | 1 | `libqsim/tests/test_simulation.py::test_simulation_trace_initial_occupied_columns_and_measurement` |
-| **FR-3.15** | High | Browsing snapshots shall not invoke simulation or change session statuses | 1 | `libqsim/tests/test_session.py::test_trace_navigation_stale_retention_and_failed_run_preservation` |
+| **FR-3.12** | High | A failed Run shall leave the current circuit | 3 | `libqsim/tests/test_session.py::test_lc8_failing_simulation`<br>`libqsim/tests/test_session.py::test_lc8_invalid_circuit_run_refuses_simulation`<br>`qsim-gui/tests/test_results_smoke.py::test_failing_run_preserves_previous_result_and_status` |
+| **FR-3.13** | High | A successful Run shall retain a display trace | 1 | `libqsim/tests/test_simulation.py::test_simulation_trace_initial_occupied_columns_and_measurement` |
+| **FR-3.14** | High | Gates in one column shall be applied together | 1 | `libqsim/tests/test_simulation.py::test_simulation_trace_initial_occupied_columns_and_measurement` |
+| **FR-3.15** | High | Browsing snapshots shall not invoke the | 1 | `libqsim/tests/test_session.py::test_trace_navigation_stale_retention_and_failed_run_preservation` |
 | **FR-3.2** | High | Simulation shall be exact noiseless | 15 | 15 tests (e.g. `libqsim/tests/test_simulation.py::test_single_qubit_reference_circuits`<br>`libqsim/tests/test_simulation.py::test_s_and_t_phases_on_plus_state`<br>`libqsim/tests/test_simulation.py::test_cnot_both_orientations` ...) |
 | **FR-3.3** | High | The system shall compute the probability | 13 | 13 tests (e.g. `libqsim/tests/test_results.py::test_basis_labels_values_and_ordering`<br>`libqsim/tests/test_results.py::test_basis_labels_bounds_validation`<br>`libqsim/tests/test_results.py::test_simulation_result_probabilities_tolerance` ...) |
 | **FR-3.4** | High | The system shall compute one reduced Bloch | 13 | 13 tests (e.g. `libqsim/tests/test_bloch.py::test_bloch_vectors_known_pure_states`<br>`libqsim/tests/test_bloch.py::test_bloch_vectors_bell_state_maximally_mixed`<br>`libqsim/tests/test_bloch.py::test_bloch_vectors_three_qubit_product_state` ...) |
@@ -104,13 +103,13 @@ coverage.
 | **FR-3.8** | High | The application shall clearly indicate when | 2 | `qsim-gui/tests/test_gui_smoke.py::test_status_bar_indicators_and_stale_style`<br>`qsim-gui/tests/test_results_smoke.py::test_stale_banner_appears_after_mutation` |
 | **FR-3.9** | High | The simulator shall execute gates in | 2 | `libqsim/tests/test_simulation.py::test_column_order_execution`<br>`libqsim/tests/test_simulation.py::test_placement_list_order_invariance` |
 | **FR-4.1** | High | The system shall | 1 | `qsim-gui/tests/test_results_smoke.py::test_bell_state_run_results_panel` |
-| **FR-4.10** | High | Bloch-sphere and | 2 | `qsim-gui/tests/test_results_smoke.py::test_bell_state_run_results_panel`<br>`qsim-gui/tests/test_results_smoke.py::test_stale_banner_appears_after_mutation` |
-| **FR-4.15** | High | The interface shall identify the selected trace step | 1 | `qsim-gui/tests/test_results_smoke.py::test_results_navigation_updates_selected_snapshot` |
-| **FR-4.16** | High | Previous and Next controls shall navigate retained snapshots | 1 | `qsim-gui/tests/test_results_smoke.py::test_results_navigation_updates_selected_snapshot` |
+| **FR-4.10** | High | Bloch-sphere and | 3 | `qsim-gui/tests/test_results_smoke.py::test_bell_state_run_results_panel`<br>`qsim-gui/tests/test_results_smoke.py::test_stale_banner_appears_after_mutation`<br>`qsim-gui/tests/test_results_smoke.py::test_results_navigation_updates_selected_snapshot` |
 | **FR-4.11** | Medium | The system shall allow | 1 | `qsim-gui/tests/test_file_actions.py::test_export_images_circuit_bloch_histogram` |
 | **FR-4.12** | Medium | The system shall allow | 1 | `qsim-gui/tests/test_file_actions.py::test_export_images_circuit_bloch_histogram` |
 | **FR-4.13** | Medium | The system shall allow | 1 | `qsim-gui/tests/test_file_actions.py::test_export_images_circuit_bloch_histogram` |
 | **FR-4.14** | Medium | The interface shall | 2 | `qsim-gui/tests/test_help.py::test_palette_and_results_explanations_exist`<br>`qsim-gui/tests/test_results_smoke.py::test_bell_state_run_results_panel` |
+| **FR-4.15** | High | The interface shall identify the selected | 1 | `qsim-gui/tests/test_results_smoke.py::test_results_navigation_updates_selected_snapshot` |
+| **FR-4.16** | High | Previous and Next controls shall navigate | 1 | `qsim-gui/tests/test_results_smoke.py::test_results_navigation_updates_selected_snapshot` |
 | **FR-4.2** | High | Each Bloch sphere shall | 1 | `qsim-gui/tests/test_results_smoke.py::test_bell_state_run_results_panel` |
 | **FR-4.3** | High | Each Bloch sphere shall | 2 | `qsim-gui/tests/test_projection.py::test_origin_projects_to_sphere_center`<br>`qsim-gui/tests/test_projection.py::test_six_axis_endpoints_project_to_distinct_points` |
 | **FR-4.4** | High | The reduced Bloch | 3 | `qsim-gui/tests/test_projection.py::test_origin_projects_to_sphere_center`<br>`qsim-gui/tests/test_projection.py::test_six_axis_endpoints_project_to_distinct_points`<br>`tests/acceptance/test_release_acceptance.py::test_section17_bell_state_and_bloch` |
@@ -129,7 +128,14 @@ coverage.
 | **FR-5.16** | High | `schema_version` shall equal the | 32 | 32 tests (e.g. `libqsim/tests/test_qcs.py::test_qcs_rejections[not json-JSON]`<br>`libqsim/tests/test_qcs.py::test_qcs_rejections[[]-object]`<br>`libqsim/tests/test_qcs.py::test_qcs_rejections["string root"-object]` ...) |
 | **FR-5.17** | High | Every gate placement shall have | 32 | 32 tests (e.g. `libqsim/tests/test_qcs.py::test_qcs_toffoli_example_from_doc`<br>`libqsim/tests/test_qcs.py::test_qcs_rejections[not json-JSON]`<br>`libqsim/tests/test_qcs.py::test_qcs_rejections[[]-object]` ...) |
 | **FR-5.18** | Medium | The writer shall emit canonical | 2 | `libqsim/tests/test_qcs.py::test_qcs_canonical_output`<br>`tests/acceptance/test_release_acceptance.py::test_section17_qcs_save_load_strictness_canonical` |
+| **FR-5.19** | Medium | The application shall provide | 2 | `libqsim/tests/test_example_catalog.py::test_catalog_has_five_valid_named_examples`<br>`qsim-gui/tests/test_examples.py::test_examples_menu_lists_named_described_catalog` |
 | **FR-5.2** | High | A saved circuit shall contain the qubit | 1 | `libqsim/tests/test_qcs.py::test_qcs_roundtrip_handbuilt_and_seeded` |
+| **FR-5.20** | Medium | The user shall be able to load | 4 | 4 tests (e.g. `libqsim/tests/test_example_catalog.py::test_catalog_has_five_valid_named_examples`<br>`libqsim/tests/test_example_catalog.py::test_load_example_replaces_session_as_unsaved_and_clears_history`<br>`qsim-gui/tests/test_examples.py::test_examples_menu_lists_named_described_catalog` ...) |
+| **FR-5.21** | High | A loaded example shall have no | 2 | `libqsim/tests/test_example_catalog.py::test_load_example_replaces_session_as_unsaved_and_clears_history`<br>`qsim-gui/tests/test_examples.py::test_load_example_uses_dirty_prompt_and_cancel_preserves_state` |
+| **FR-5.22** | High | Loading an example shall clear | 2 | `libqsim/tests/test_example_catalog.py::test_load_example_replaces_session_as_unsaved_and_clears_history`<br>`qsim-gui/tests/test_examples.py::test_load_example_uses_dirty_prompt_and_cancel_preserves_state` |
+| **FR-5.23** | High | Loading an example shall clear | 2 | `libqsim/tests/test_example_catalog.py::test_load_example_replaces_session_as_unsaved_and_clears_history`<br>`qsim-gui/tests/test_examples.py::test_load_example_uses_dirty_prompt_and_cancel_preserves_state` |
+| **FR-5.24** | High | A dirty-session example load | 2 | `qsim-gui/tests/test_examples.py::test_load_example_uses_dirty_prompt_and_cancel_preserves_state`<br>`qsim-gui/tests/test_examples.py::test_failed_save_aborts_example_load` |
+| **FR-5.25** | High | A failed example load shall | 2 | `libqsim/tests/test_example_catalog.py::test_invalid_example_failure_preserves_session_state`<br>`qsim-gui/tests/test_examples.py::test_failed_save_aborts_example_load` |
 | **FR-5.3** | High | The `.qcs` file shall contain a | 1 | `libqsim/tests/test_qcs.py::test_qcs_roundtrip_handbuilt_and_seeded` |
 | **FR-5.4** | High | The system shall load a valid `.qcs` file | 8 | 8 tests (e.g. `libqsim/tests/test_qcs.py::test_qcs_roundtrip_handbuilt_and_seeded`<br>`libqsim/tests/test_qcs.py::test_qcs_toffoli_example_from_doc`<br>`libqsim/tests/test_session_files.py::test_session_open_success` ...) |
 | **FR-5.5** | High | A save/load round trip shall preserve | 2 | `libqsim/tests/test_qcs.py::test_qcs_roundtrip_handbuilt_and_seeded`<br>`tests/acceptance/test_release_acceptance.py::test_section17_qcs_save_load_strictness_canonical` |
@@ -139,7 +145,7 @@ coverage.
 | **FR-5.9** | High | The system shall reject unsupported `.qcs` | 32 | 32 tests (e.g. `libqsim/tests/test_qcs.py::test_qcs_rejections[not json-JSON]`<br>`libqsim/tests/test_qcs.py::test_qcs_rejections[[]-object]`<br>`libqsim/tests/test_qcs.py::test_qcs_rejections["string root"-object]` ...) |
 | **FR-6.1** | Medium | The system shall import valid files from | 2 | `libqsim/tests/test_qasm.py::test_measurement_export_and_import`<br>`tests/acceptance/test_release_acceptance.py::test_section17_qasm_interop_ordering_and_limits` |
 | **FR-6.10** | Medium | The application shall not import or export | 25 | 25 tests (e.g. `libqsim/tests/test_qasm.py::test_rejected_constructs_name_construct_and_line_number[include "qelib1.inc";\nqreg q[2];\n-OPENQASM 2.0-1]`<br>`libqsim/tests/test_qasm.py::test_rejected_constructs_name_construct_and_line_number[OPENQASM 2.0;\nqreg q[2];\nh q[0];\n-include-2]`<br>`libqsim/tests/test_qasm.py::test_rejected_constructs_name_construct_and_line_number[OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg foo[2];\n-foo-3]` ...) |
-| **FR-6.11** | Medium | A successful Import OpenQASM operation shall | 4 | 4 tests (e.g. `libqsim/tests/test_session_qasm.py::test_session_import_qasm_success`<br>`libqsim/tests/test_session_qasm.py::test_session_import_qasm_failure_preserves_state`<br>`qsim-gui/tests/test_file_actions.py::test_import_openqasm_success_and_failure` ...) |
+| **FR-6.11** | Medium | A successful Import OpenQASM operation shall | 5 | 5 tests (e.g. `libqsim/tests/test_session_qasm.py::test_session_import_qasm_success`<br>`libqsim/tests/test_session_qasm.py::test_session_import_qasm_failure_preserves_state`<br>`qsim-gui/tests/test_file_actions.py::test_import_openqasm_success_and_failure` ...) |
 | **FR-6.12** | High | A failed Import OpenQASM operation shall | 2 | `libqsim/tests/test_session_qasm.py::test_session_export_qasm_preserves_statuses_and_history`<br>`qsim-gui/tests/test_file_actions.py::test_import_openqasm_success_and_failure` |
 | **FR-6.13** | Medium | OpenQASM `cx` and `ccx` shall use | 5 | 5 tests (e.g. `libqsim/tests/test_qasm.py::test_bell_circuit_export_literal`<br>`libqsim/tests/test_qasm.py::test_measurement_export_and_import`<br>`libqsim/tests/test_qasm.py::test_qiskit_independent_oracle` ...) |
 | **FR-6.14** | Medium | The importer shall require both | 2 | `libqsim/tests/test_qasm.py::test_ordering_example_from_doc`<br>`tests/acceptance/test_release_acceptance.py::test_section17_qasm_interop_ordering_and_limits` |
@@ -158,11 +164,6 @@ coverage.
 | **FR-7.3** | Medium | Each gate in the | 2 | `qsim-gui/tests/test_help.py::test_palette_and_results_explanations_exist`<br>`qsim-gui/tests/test_palette.py::test_palette_contains_exactly_nine_items_with_tooltips` |
 | **FR-7.4** | Medium | The application shall | 1 | `qsim-gui/tests/test_help.py::test_palette_and_results_explanations_exist` |
 | **FR-7.5** | Medium | The application shall | 3 | `qsim-gui/tests/test_help.py::test_resolver_finds_all_docs`<br>`qsim-gui/tests/test_help.py::test_each_help_page_opens_and_contains_title`<br>`qsim-gui/tests/test_help.py::test_main_window_help_menu_actions` |
-| **FR-7.6** | Medium | The circuit editor shall display standard gate symbols and a compact vertical symbolic palette | 1 | `qsim-gui/tests/test_palette.py::test_palette_contains_exactly_nine_items_with_tooltips` |
-| **FR-7.7** | Medium | Simulation results shall appear below the workspace with visualisations side by side | 1 | `qsim-gui/tests/test_gui_smoke.py::test_main_window_construction_and_regions` |
-| **FR-7.8** | Medium | The main window shall provide an editable, syntax-checked OpenQASM panel | 3 | `qsim-gui/tests/test_qasm_panel.py::test_qasm_panel_shows_export_and_tracks_circuit_changes`<br>`qsim-gui/tests/test_qasm_panel.py::test_qasm_panel_reports_invalid_syntax_and_unsupported_subset`<br>`qsim-gui/tests/test_qasm_panel.py::test_qasm_panel_applies_valid_program_only_on_button_click` |
-| **FR-7.9** | Medium | Preferences shall select and persist the appearance theme | 2 | `qsim-gui/tests/test_preferences.py::test_preferences_lists_themes_and_saves_selected_theme`<br>`qsim-gui/tests/test_preferences.py::test_preferences_cancel_does_not_change_theme` |
-| **FR-7.10** | Medium | Dark and Dark Purple themes shall apply the flat appearance | 2 | `qsim-gui/tests/test_preferences.py::test_both_themes_use_dark_palette_and_distinct_accents`<br>`qsim-gui/tests/test_preferences.py::test_preferences_lists_themes_and_saves_selected_theme` |
 | **NFR-1.1** | High | On the reference hardware, a valid | 2 | `qsim-gui/tests/test_results_smoke.py::test_bell_state_run_results_panel`<br>`tests/acceptance/test_release_acceptance.py::test_performance_nfr_1_1_max_circuit_simulation` |
 | **NFR-1.2** | High | Circuit-edit handlers shall return | 2 | `libqsim/tests/test_operations.py::test_editing_performance_10_qubit_circuit`<br>`tests/acceptance/test_release_acceptance.py::test_performance_nfr_1_2_max_circuit_editing` |
 | **NFR-2.1** | High | A first-time user with no prior Open | 1 | `tests/acceptance/test_release_acceptance.py::test_offline_headless_and_gui_smoke_no_network` |
@@ -180,6 +181,7 @@ coverage.
 | **NFR-4.1** | High | The application shall | 2 | `qsim-gui/tests/test_help.py::test_no_network_modules_imported`<br>`tests/acceptance/test_release_acceptance.py::test_offline_headless_and_gui_smoke_no_network` |
 | **NFR-4.2** | High | The application shall | 1 | `tests/acceptance/test_release_acceptance.py::test_offline_headless_and_gui_smoke_no_network` |
 | **NFR-4.3** | High | No user account, | 1 | `tests/acceptance/test_release_acceptance.py::test_offline_headless_and_gui_smoke_no_network` |
+| **NFR-4.4** | High | Built-in example | 1 | `libqsim/tests/test_example_catalog.py::test_catalog_has_five_valid_named_examples` |
 | **NFR-5.1** | High | The circuit domain model and | 7 | 7 tests (e.g. `libqsim/tests/test_boundaries.py::test_subpackage_does_not_import_qt[libqsim]`<br>`libqsim/tests/test_boundaries.py::test_subpackage_does_not_import_qt[libqsim.domain]`<br>`libqsim/tests/test_boundaries.py::test_subpackage_does_not_import_qt[libqsim.application]` ...) |
 | **NFR-5.2** | High | Circuit validation shall be | 1 | `tests/acceptance/test_release_acceptance.py::test_section17_validation_failures_and_column_bounds` |
 | **NFR-5.3** | Medium | QCS | 2 | `libqsim/tests/test_qcs.py::test_qcs_roundtrip_handbuilt_and_seeded`<br>`libqsim/tests/test_session_files.py::test_session_open_success` |
@@ -197,20 +199,22 @@ coverage.
 | **NFR-7.6** | High | OpenQASM import and | 1 | `libqsim/tests/test_qasm.py::test_qiskit_independent_oracle` |
 | **NFR-7.7** | High | Floating-point | 18 | 18 tests (e.g. `libqsim/tests/test_bloch.py::test_bloch_vectors_known_pure_states`<br>`libqsim/tests/test_bloch.py::test_bloch_vectors_bell_state_maximally_mixed`<br>`libqsim/tests/test_bloch.py::test_bloch_vectors_three_qubit_product_state` ...) |
 | **NFR-7.8** | High | Application-state | 26 | 26 tests (e.g. `libqsim/tests/test_guarded.py::test_guarded_clean_session_always_executes_action[New]`<br>`libqsim/tests/test_guarded.py::test_guarded_clean_session_always_executes_action[Open]`<br>`libqsim/tests/test_guarded.py::test_guarded_clean_session_always_executes_action[Import]` ...) |
+| **NFR-7.9** | High | Every bundled example | 1 | `libqsim/tests/test_example_catalog.py::test_catalog_has_five_valid_named_examples` |
 | **LC-1** | High | At application startup, a new empty 2-qubit circuit is shown with Save status... | 1 | `libqsim/tests/test_session.py::test_lc1_startup` |
 | **LC-2** | High | After every successful circuit mutation, Save status shall be recalculated ag... | 3 | `libqsim/tests/test_session.py::test_lc2_mutation_and_stale`<br>`libqsim/tests/test_session.py::test_circuit_mutated_then_restored_with_different_placement_order`<br>`tests/acceptance/test_release_acceptance.py::test_section17_undo_redo_baseline_equality` |
 | **LC-3** | High | Undo and Redo update the circuit and recalculate Save status by comparing the... | 2 | `libqsim/tests/test_session.py::test_lc3_lc4_undo_redo_and_baseline_equality`<br>`tests/acceptance/test_release_acceptance.py::test_section17_undo_redo_baseline_equality` |
 | **LC-4** | High | Undo and Redo make Simulation status `Stale` when a retained result exists; t... | 4 | 4 tests (e.g. `libqsim/tests/test_history.py::test_history_initial_state`<br>`libqsim/tests/test_history.py::test_history_push_and_undo_redo`<br>`libqsim/tests/test_session.py::test_lc3_lc4_undo_redo_and_baseline_equality` ...) |
 | **LC-5** | High | After Undo, a new successful mutation clears the redo history. | 3 | `libqsim/tests/test_history.py::test_history_push_clears_redo`<br>`libqsim/tests/test_session.py::test_lc5_apply_after_undo_clears_redo`<br>`tests/acceptance/test_release_acceptance.py::test_section17_undo_redo_baseline_equality` |
 | **LC-6** | High | Save and Save As write the current circuit and establish that exact circuit d... | 3 | `libqsim/tests/test_session.py::test_lc9_lc10_lc6_lifecycle_primitives`<br>`libqsim/tests/test_session_files.py::test_session_save_as_and_save`<br>`qsim-gui/tests/test_file_actions.py::test_save_as_establishes_clean_baseline` |
-| **LC-7** | High | Run does not change Save status. A successful Run replaces the retained simul... | 1 | `libqsim/tests/test_session.py::test_lc7_run_success_and_stale_never_restores_historical` |
-| **LC-8** | High | A failed Run leaves the previously retained result, and its Simulation status... | 2 | `libqsim/tests/test_session.py::test_lc8_failing_simulation`<br>`libqsim/tests/test_session.py::test_lc8_invalid_circuit_run_refuses_simulation` |
+| **LC-7** | High | Run does not change Save status. A successful Run replaces the retained simul... | 2 | `libqsim/tests/test_session.py::test_trace_navigation_stale_retention_and_failed_run_preservation`<br>`libqsim/tests/test_session.py::test_lc7_run_success_and_stale_never_restores_historical` |
+| **LC-8** | High | A failed Run leaves the previously retained result, trace, selected step, and... | 3 | `libqsim/tests/test_session.py::test_trace_navigation_stale_retention_and_failed_run_preservation`<br>`libqsim/tests/test_session.py::test_lc8_failing_simulation`<br>`libqsim/tests/test_session.py::test_lc8_invalid_circuit_run_refuses_simulation` |
 | **LC-9** | High | New and successful Load/Open establish the resulting circuit as the `Clean` s... | 3 | `libqsim/tests/test_history.py::test_history_clear`<br>`libqsim/tests/test_session.py::test_lc9_lc10_lc6_lifecycle_primitives`<br>`libqsim/tests/test_session_files.py::test_session_open_success` |
 | **LC-10** | High | A successful Import OpenQASM replaces the current session with a new unsaved ... | 2 | `libqsim/tests/test_session.py::test_lc9_lc10_lc6_lifecycle_primitives`<br>`libqsim/tests/test_session_qasm.py::test_session_import_qasm_success` |
-| **LC-11** | High | A failed Load/Open or Import OpenQASM operation leaves the current circuit, S... | 7 | 7 tests (e.g. `libqsim/tests/test_guarded.py::test_guarded_dirty_dont_save_failing_action[New]`<br>`libqsim/tests/test_guarded.py::test_guarded_dirty_dont_save_failing_action[Open]`<br>`libqsim/tests/test_guarded.py::test_guarded_dirty_dont_save_failing_action[Import]` ...) |
-| **LC-12** | High | When New, Load/Open, Import OpenQASM, or application Exit is requested while ... | 27 | 27 tests (e.g. `libqsim/tests/test_guarded.py::test_guarded_clean_session_always_executes_action[New]`<br>`libqsim/tests/test_guarded.py::test_guarded_clean_session_always_executes_action[Open]`<br>`libqsim/tests/test_guarded.py::test_guarded_clean_session_always_executes_action[Import]` ...) |
+| **LC-11** | High | A failed Load/Open, Import OpenQASM, or Load Example operation leaves the cur... | 7 | 7 tests (e.g. `libqsim/tests/test_guarded.py::test_guarded_dirty_dont_save_failing_action[New]`<br>`libqsim/tests/test_guarded.py::test_guarded_dirty_dont_save_failing_action[Open]`<br>`libqsim/tests/test_guarded.py::test_guarded_dirty_dont_save_failing_action[Import]` ...) |
+| **LC-12** | High | When New, Load/Open, Import OpenQASM, Load Example, or application Exit is re... | 27 | 27 tests (e.g. `libqsim/tests/test_guarded.py::test_guarded_clean_session_always_executes_action[New]`<br>`libqsim/tests/test_guarded.py::test_guarded_clean_session_always_executes_action[Open]`<br>`libqsim/tests/test_guarded.py::test_guarded_clean_session_always_executes_action[Import]` ...) |
 | **LC-13** | High | `Save` shall first perform a successful save. If the save fails, the requeste... | 10 | 10 tests (e.g. `libqsim/tests/test_guarded.py::test_guarded_dirty_save_success[New]`<br>`libqsim/tests/test_guarded.py::test_guarded_dirty_save_success[Open]`<br>`libqsim/tests/test_guarded.py::test_guarded_dirty_save_success[Import]` ...) |
 | **LC-14** | High | `Don't Save` shall discard the unsaved changes and perform the requested oper... | 11 | 11 tests (e.g. `libqsim/tests/test_guarded.py::test_guarded_dirty_dont_save[New]`<br>`libqsim/tests/test_guarded.py::test_guarded_dirty_dont_save[Open]`<br>`libqsim/tests/test_guarded.py::test_guarded_dirty_dont_save[Import]` ...) |
 | **LC-15** | High | `Cancel` shall perform no operation and shall leave the current application s... | 6 | 6 tests (e.g. `libqsim/tests/test_guarded.py::test_guarded_dirty_cancel[New]`<br>`libqsim/tests/test_guarded.py::test_guarded_dirty_cancel[Open]`<br>`libqsim/tests/test_guarded.py::test_guarded_dirty_cancel[Import]` ...) |
 | **LC-16** | High | Save on a circuit that has no file path shall open the file-save dialog. | 2 | `libqsim/tests/test_session_files.py::test_session_save_without_path_reports_needs_path`<br>`qsim-gui/tests/test_file_actions.py::test_save_with_no_path_opens_save_dialog` |
 | **LC-17** | High | A successful Save As shall establish the selected path as the current file pa... | 2 | `libqsim/tests/test_session_files.py::test_session_save_as_and_save`<br>`qsim-gui/tests/test_file_actions.py::test_save_as_establishes_clean_baseline` |
+| **LC-18** | High | A successful Load Example operation shall replace the current session with th... | 4 | 4 tests (e.g. `libqsim/tests/test_example_catalog.py::test_load_example_replaces_session_as_unsaved_and_clears_history`<br>`libqsim/tests/test_example_catalog.py::test_invalid_example_failure_preserves_session_state`<br>`qsim-gui/tests/test_examples.py::test_load_example_uses_dirty_prompt_and_cancel_preserves_state` ...) |

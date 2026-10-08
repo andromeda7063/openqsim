@@ -9,6 +9,7 @@ from libqsim.application.history import History
 from libqsim.application.operations import OperationResult
 from libqsim.domain.models import Circuit
 from libqsim.domain.validation import validate
+from libqsim.examples import CircuitExample
 from libqsim.persistence.qcs import QcsError, read, write
 from libqsim.qasm.exporter import export_text
 from libqsim.qasm.importer import QasmError, import_text
@@ -247,6 +248,16 @@ class EditorSession:
         self._simulation_status = SimulationStatus.NONE
         self._history.clear()
         self._notify()
+
+    def load_example(self, example: CircuitExample) -> IoOutcome:
+        """Replace this session with a validated example as an unsaved session."""
+        errors = validate(example.circuit)
+        if errors:
+            return IoOutcome(
+                False, "Example circuit is invalid: " + "; ".join(e.message for e in errors)
+            )
+        self.establish_imported(example.circuit)
+        return IoOutcome(True)
 
     def mark_saved(self, path: Path | None = None) -> None:
         """Establish the current circuit as the clean baseline and optionally update file path."""

@@ -5,6 +5,7 @@ from pathlib import Path
 from libqsim.application.guarded import run_guarded
 from libqsim.application.operations import plan_resize, resize
 from libqsim.application.session import EditorSession, SaveStatus, SimulationStatus
+from libqsim.examples import list_examples
 from PySide6.QtCore import QSettings, QSize, Qt
 from PySide6.QtGui import QAction, QCloseEvent, QIcon, QImage
 from PySide6.QtWidgets import (
@@ -112,6 +113,17 @@ class MainWindow(QMainWindow):
         file_menu.addAction(self._commands.action_open)
         file_menu.addAction(self._commands.action_save)
         file_menu.addAction(self._commands.action_save_as)
+        examples_menu = menubar.addMenu("&Examples")
+        self.example_actions: dict[str, QAction] = {}
+        for example in list_examples():
+            action = QAction(f"{example.name} — {example.description}", self)
+            action.setToolTip(example.description)
+            action.setStatusTip(example.description)
+            action.triggered.connect(
+                lambda checked=False, item=example: self._commands.handle_load_example(item)
+            )
+            examples_menu.addAction(action)
+            self.example_actions[example.name] = action
         file_menu.addSeparator()
         file_menu.addAction(self._commands.action_import_qasm)
         file_menu.addAction(self._commands.action_export_qasm)
