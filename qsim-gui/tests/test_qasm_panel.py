@@ -59,3 +59,37 @@ def test_qasm_panel_applies_valid_program_only_on_button_click(qapp: QApplicatio
     assert applied == []
     panel.apply_button.click()
     assert applied == [source]
+
+
+@pytest.mark.req("FR-7.8")
+def test_qasm_panel_highlights_qasm_tokens(qapp: QApplication) -> None:
+    panel = QasmPanel(SessionAdapter(EditorSession()), lambda _source: True)
+    panel.editor.setPlainText('OPENQASM 2.0;\ninclude "qelib1.inc"; // header\nh q[0];')
+
+    block = panel.editor.document().firstBlock()
+    formats = block.layout().formats()
+    highlighted = {
+        block.text()[item.start : item.start + item.length]: item.format.foreground().color().name()
+        for item in formats
+    }
+    assert highlighted["OPENQASM"] == "#c792ea"
+    include_block = block.next()
+    include_formats = include_block.layout().formats()
+    assert any(
+        include_block.text()[item.start : item.start + item.length] == '"qelib1.inc"'
+        and item.format.foreground().color().name() == "#c3e88d"
+        for item in include_formats
+    )
+    assert any(
+        include_block.text()[item.start : item.start + item.length] == "// header"
+        and item.format.foreground().color().name() == "#697098"
+        for item in include_formats
+    )
+
+    gate_block = include_block.next()
+    gate_formats = gate_block.layout().formats()
+    assert any(
+        gate_block.text()[item.start : item.start + item.length] == "h"
+        and item.format.foreground().color().name() == "#82aaff"
+        for item in gate_formats
+    )

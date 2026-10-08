@@ -1,13 +1,44 @@
 """Live OpenQASM editor with syntax and supported-subset feedback."""
 
+import re
 from collections.abc import Callable
 
 from libqsim.qasm.exporter import export_text
 from libqsim.qasm.importer import QasmError, import_text
+from PySide6.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat, QTextDocument
 from PySide6.QtWidgets import QLabel, QPlainTextEdit, QPushButton, QVBoxLayout, QWidget
 from qiskit import qasm2
 from qiskit.qasm2 import QASM2Error
 from qsim_gui.state import SessionAdapter
+
+
+class _QasmHighlighter(QSyntaxHighlighter):
+    """Apply lightweight highlighting for the supported OpenQASM syntax."""
+
+    def __init__(self, document: QTextDocument) -> None:
+        super().__init__(document)
+        self._rules: list[tuple[re.Pattern[str], QTextCharFormat]] = []
+        self._add_rule(r"\bOPENQASM\b|\b(?:qreg|creg|include|measure)\b", "#c792ea", bold=True)
+        self._add_rule(r"\b(?:h|x|y|z|s|t|cx|ccx)\b", "#82aaff", bold=True)
+        self._add_rule(r'"[^"\n]*"', "#c3e88d")
+        self._add_rule(r"\b\d+(?:\.\d+)?\b", "#f78c6c")
+        self._add_rule(r"//[^\n]*", "#697098", italic=True)
+
+    def _add_rule(
+        self, pattern: str, color: str, *, bold: bool = False, italic: bool = False
+    ) -> None:
+        fmt = QTextCharFormat()
+        fmt.setForeground(QColor(color))
+        if bold:
+            fmt.setFontWeight(QFont.Weight.Bold)
+        if italic:
+            fmt.setFontItalic(True)
+        self._rules.append((re.compile(pattern), fmt))
+
+    def highlightBlock(self, text: str) -> None:
+        for pattern, fmt in self._rules:
+            for match in pattern.finditer(text):
+                self.setFormat(match.start(), match.end() - match.start(), fmt)
 
 
 class QasmPanel(QWidget):
@@ -37,6 +68,7 @@ class QasmPanel(QWidget):
         self.editor.setObjectName("qasm_editor")
         self.editor.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
         self.editor.setTabStopDistance(4 * self.editor.fontMetrics().horizontalAdvance(" "))
+        self.highlighter = _QasmHighlighter(self.editor.document())
         self.editor.textChanged.connect(self._validate_text)
         layout.addWidget(self.editor, 1)
 
