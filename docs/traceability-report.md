@@ -2,13 +2,13 @@
 
 ## 1. Executive Summary
 
-- **Total Requirements Defined**: 179
+- **Total Requirements Defined**: 182
   - **High Priority (FR, NFR, LC)**: 124
-  - **Medium Priority**: 55
+  - **Medium Priority**: 58
 - **Total Tests Collected**: 321
-- **Requirements Covered**: 179 / 179 (100.0%)
+- **Requirements Covered**: 179 / 182 (98.4%)
 - **High-Priority Coverage**: 124 / 124 (100.0%)
-- **Medium-Priority Coverage**: 55 / 55 (100.0%)
+- **Medium-Priority Coverage**: 55 / 58 (94.8%)
 
 ## 2. Coverage Gaps
 
@@ -18,7 +18,11 @@
 
 ### Medium-Priority Requirements with NO Test
 
-**None.** All Medium-priority requirements (100%) have automated test coverage.
+- **FR-7.6** — Symbolic circuit gates and compact vertical palette.
+- **FR-7.7** — Bottom results area with side-by-side visualisations.
+- **FR-7.8** — Editable OpenQASM editor, syntax checking, and apply action.
+
+These v1.1 requirements need automated coverage.
 
 ## 3. Full Traceability Matrix
 
@@ -152,6 +156,9 @@
 | **FR-7.3** | Medium | Each gate in the | 2 | `qsim-gui/tests/test_help.py::test_palette_and_results_explanations_exist`<br>`qsim-gui/tests/test_palette.py::test_palette_contains_exactly_nine_items_with_tooltips` |
 | **FR-7.4** | Medium | The application shall | 1 | `qsim-gui/tests/test_help.py::test_palette_and_results_explanations_exist` |
 | **FR-7.5** | Medium | The application shall | 3 | `qsim-gui/tests/test_help.py::test_resolver_finds_all_docs`<br>`qsim-gui/tests/test_help.py::test_each_help_page_opens_and_contains_title`<br>`qsim-gui/tests/test_help.py::test_main_window_help_menu_actions` |
+| **FR-7.6** | Medium | The circuit editor shall display standard gate symbols and a compact vertical symbolic palette | 0 | — |
+| **FR-7.7** | Medium | Simulation results shall appear below the workspace with visualisations side by side | 0 | — |
+| **FR-7.8** | Medium | The main window shall provide an editable, syntax-checked OpenQASM panel | 0 | — |
 | **NFR-1.1** | High | On the reference hardware, a valid | 2 | `qsim-gui/tests/test_results_smoke.py::test_bell_state_run_results_panel`<br>`tests/acceptance/test_release_acceptance.py::test_performance_nfr_1_1_max_circuit_simulation` |
 | **NFR-1.2** | High | Circuit-edit handlers shall return | 2 | `libqsim/tests/test_operations.py::test_editing_performance_10_qubit_circuit`<br>`tests/acceptance/test_release_acceptance.py::test_performance_nfr_1_2_max_circuit_editing` |
 | **NFR-2.1** | High | A first-time user with no prior Open | 1 | `tests/acceptance/test_release_acceptance.py::test_offline_headless_and_gui_smoke_no_network` |

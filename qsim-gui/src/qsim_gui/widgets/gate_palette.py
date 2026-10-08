@@ -5,7 +5,6 @@ from PySide6.QtCore import QByteArray, QMimeData, QPoint, Qt
 from PySide6.QtGui import QDrag, QFont, QMouseEvent
 from PySide6.QtWidgets import (
     QApplication,
-    QFrame,
     QLabel,
     QPushButton,
     QVBoxLayout,
@@ -24,6 +23,18 @@ GATE_TOOLTIPS: dict[GateType, str] = {
     GateType.CNOT: "Controlled-NOT gate: flips target qubit when control is |1⟩",
     GateType.Toffoli: "Controlled-Controlled-NOT gate: flips target when both controls are |1⟩",
     GateType.Measurement: "Measurement marker: visual readout of qubit wire (ignored in statevector simulation)",
+}
+
+GATE_SYMBOLS: dict[GateType, str] = {
+    GateType.H: "H",
+    GateType.X: "X",
+    GateType.Y: "Y",
+    GateType.Z: "Z",
+    GateType.S: "S",
+    GateType.T: "T",
+    GateType.CNOT: "⊕",
+    GateType.Toffoli: "••⊕",
+    GateType.Measurement: "M",
 }
 
 
@@ -49,10 +60,10 @@ class DraggableGateButton(QPushButton):
     """Button representing a gate in the palette that can be dragged onto the canvas."""
 
     def __init__(self, gate_type: GateType, tooltip: str, parent: QWidget | None = None) -> None:
-        super().__init__(gate_type.value, parent)
+        super().__init__(GATE_SYMBOLS[gate_type], parent)
         self.gate_type = gate_type
         self.setToolTip(tooltip)
-        self.setMinimumHeight(38)
+        self.setFixedSize(46, 38)
         self.setSizePolicy(self.sizePolicy().horizontalPolicy(), self.sizePolicy().verticalPolicy())
         font = QFont(self.font())
         font.setBold(True)
@@ -84,30 +95,28 @@ class GatePalette(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("gate_palette")
+        self.setFixedWidth(60)
         self._buttons: list[DraggableGateButton] = []
         self._setup_ui()
 
     def _setup_ui(self) -> None:
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(6, 6, 6, 6)
-        layout.setSpacing(6)
+        layout.setContentsMargins(4, 6, 4, 6)
+        layout.setSpacing(4)
 
         title = QLabel("Gates", self)
         title_font = QFont(self.font())
         title_font.setBold(True)
         title.setFont(title_font)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setMaximumWidth(48)
         layout.addWidget(title)
-
-        separator = QFrame(self)
-        separator.setFrameShape(QFrame.Shape.HLine)
-        separator.setFrameShadow(QFrame.Shadow.Sunken)
-        layout.addWidget(separator)
 
         for gate_type, tooltip in self.items():
             btn = DraggableGateButton(gate_type, tooltip, self)
+            btn.setAccessibleName(gate_type.value)
             self._buttons.append(btn)
-            layout.addWidget(btn)
+            layout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         layout.addStretch()
 

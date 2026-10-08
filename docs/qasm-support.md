@@ -8,6 +8,14 @@ export.
 OpenQASM is the supported interchange format. Qiskit Python source code is not
 imported or exported.
 
+The main window includes an editable OpenQASM 2.0 panel. It shows the
+canonical export of the current circuit. Text edits are checked with Qiskit's
+`qiskit.qasm2` parser; the OpenQSim importer then checks the application's
+supported subset and circuit rules. Syntax-valid programs outside that subset
+are reported as unsupported and cannot be applied. Use **Apply to Circuit**
+to replace the current circuit from valid text. Until that action, editor
+changes do not modify the circuit.
+
 ## Supported Header
 
 The importer accepts:

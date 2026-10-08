@@ -36,7 +36,10 @@ Open QSim shall provide:
 10. Local `.qcs` JSON session files.
 11. OpenQASM 2.0 import and export for the explicitly supported subset.
 12. A non-GUI simulation API suitable for automated testing.
-13. Local user documentation and gate tooltips.
+13. A compact symbolic gate palette with tooltips.
+14. An editable OpenQASM 2.0 view synchronized with the circuit, with syntax
+    checking and explicit application of valid supported programs.
+15. Local user documentation and gate tooltips.
 
 The 50-column editor limit is release-specific. The canvas may scroll within
 the release; a future revision may remove the finite 50-column limit
@@ -1058,6 +1061,21 @@ The importer shall reject:
                           `.qcs` schema and       
                           supported OpenQASM 2.0  
                           subset.                 
+  FR-7.6                  The circuit editor shall display standard gate symbols
+                          on the circuit, and the compact gate palette shall
+                          present symbolic icons with a tooltip for each gate.
+                          The palette shall be arranged vertically.
+
+  FR-7.7                  The main window shall place simulation results below
+                          the circuit workspace, with the Bloch and probability
+                          views available side by side.
+
+  FR-7.8                  The main window shall show an editable OpenQASM 2.0
+                          editor beside the circuit canvas. It shall display a
+                          deterministic export of the current circuit, check
+                          syntax as the text changes, report syntax and
+                          supported-subset errors, and apply valid supported
+                          programs to the circuit when requested.
   -----------------------------------------------------------------------
 
 ## 13. Non-functional requirements
@@ -1123,10 +1141,13 @@ The importer shall reject:
                           horizontally and vertically. At
                           1920x1080 with the window filling
                           the screen, the palette, the
-                          scrollable canvas, and access to
-                          the Bloch-sphere and histogram
-                          views shall all be available in
-                          the same window. Drag/drop,
+                          scrollable canvas, OpenQASM
+                          editor, and access to the
+                          Bloch-sphere and histogram views
+                          shall all be available in the
+                          same window. Simulation results
+                          shall appear below the workspace.
+                          Drag/drop,
                           selection, paste, and arrow-key
                           movement shall behave identically
                           for cells reached by scrolling,
@@ -1347,6 +1368,9 @@ The main window shall provide:
 
 -   gate palette;
 -   circuit canvas with 1--10 qubits and 50 columns;
+-   editable OpenQASM 2.0 panel beside the circuit canvas;
+-   simulation results below the workspace, with Bloch spheres and the
+    probability histogram side by side;
 -   Bloch-sphere visualisation;
 -   probability histogram;
 -   New;
@@ -1361,6 +1385,17 @@ The main window shall provide:
 -   visible Save status (`Clean` or `Dirty`);
 -   visible Simulation status (`None`, `Current`, or `Stale`);
 -   the standard error presentation mechanism.
+
+The gate palette shall be a compact vertical column of symbolic icons. Each
+icon shall have an accessible name and a tooltip describing the gate. Circuit
+gates shall use conventional quantum-circuit notation, including control dots,
+target circled-plus symbols, and the measurement marker.
+
+The OpenQASM editor shall display the current circuit's canonical OpenQASM
+representation. Editing the text shall not modify the circuit until the user
+applies it. Syntax feedback shall use Qiskit's OpenQASM 2 parser; the app's
+supported-subset importer shall then determine whether the program can be
+applied. Invalid text shall leave the circuit and session state unchanged.
 
 The circuit canvas shall provide a clear grid position for each
 wire/column cell so that drag/drop, paste anchoring, and arrow-key
@@ -1616,8 +1651,8 @@ The implementation shall include automated tests for at least:
 
   Headless session tests              Section 6.5 transitions run without Qt
 
-  Layout at 1920x1080                 palette, scrollable canvas, and
-                                      results reachable in one window
+  Layout at 1920x1080                 palette, scrollable canvas, OpenQASM
+                                      editor, and bottom results in one window
 
   Wayland interaction                 drag/drop, shortcuts, dialogs, PNG
                                       export work; tiled and floating

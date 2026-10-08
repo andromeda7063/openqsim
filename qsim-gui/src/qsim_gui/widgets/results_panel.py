@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QFrame,
+    QHBoxLayout,
     QLabel,
     QScrollArea,
     QVBoxLayout,
@@ -54,58 +55,70 @@ class ResultsPanel(QWidget):
 
         # Content container
         self._content_widget = QWidget(self)
-        content_layout = QVBoxLayout(self._content_widget)
+        content_layout = QHBoxLayout(self._content_widget)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(8)
 
+        bloch_section = QWidget(self._content_widget)
+        bloch_layout = QVBoxLayout(bloch_section)
+        bloch_layout.setContentsMargins(0, 0, 0, 0)
+        bloch_layout.setSpacing(4)
+
         # Bloch section header & explanation (FR-4.14)
-        bloch_header = QLabel("Bloch Spheres (Single-Qubit Reduced States)", self._content_widget)
+        bloch_header = QLabel("Bloch Spheres (Single-Qubit Reduced States)", bloch_section)
         bloch_header_font = QFont(self.font())
         bloch_header_font.setBold(True)
         bloch_header.setFont(bloch_header_font)
-        content_layout.addWidget(bloch_header)
+        bloch_layout.addWidget(bloch_header)
 
         bloch_exp = QLabel(
             "Each sphere visualises one qubit's state. Pure states lie on the surface (|r| = 1). "
             "Entangled or mixed states appear inside the sphere (|r| < 1), with maximally entangled qubits at center.",
-            self._content_widget,
+            bloch_section,
         )
         bloch_exp.setObjectName("explanation_label")
         bloch_exp.setWordWrap(True)
         bloch_exp.setStyleSheet("color: #555; font-size: 11px;")
-        content_layout.addWidget(bloch_exp)
+        bloch_layout.addWidget(bloch_exp)
 
         # Bloch view in scroll area
-        self._bloch_view = BlochView(self._content_widget)
-        bloch_scroll = QScrollArea(self._content_widget)
+        self._bloch_view = BlochView(bloch_section)
+        bloch_scroll = QScrollArea(bloch_section)
         bloch_scroll.setWidget(self._bloch_view)
         bloch_scroll.setWidgetResizable(True)
         bloch_scroll.setMinimumHeight(180)
-        content_layout.addWidget(bloch_scroll, 3)
+        bloch_layout.addWidget(bloch_scroll, 1)
+        content_layout.addWidget(bloch_section, 1)
 
         sep = QFrame(self._content_widget)
-        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setFrameShape(QFrame.Shape.VLine)
         sep.setFrameShadow(QFrame.Shadow.Sunken)
         content_layout.addWidget(sep)
 
+        histogram_section = QWidget(self._content_widget)
+        histogram_layout = QVBoxLayout(histogram_section)
+        histogram_layout.setContentsMargins(0, 0, 0, 0)
+        histogram_layout.setSpacing(4)
+
         # Histogram section header & explanation (FR-4.14)
-        hist_header = QLabel("Computational-Basis Probabilities", self._content_widget)
+        hist_header = QLabel("Computational-Basis Probabilities", histogram_section)
         hist_header.setFont(bloch_header_font)
-        content_layout.addWidget(hist_header)
+        histogram_layout.addWidget(hist_header)
 
         hist_exp = QLabel(
             "Histogram shows full computational-basis state distribution (highest qubit on left). "
             "Probabilities are normalized to sum to 1.0. Hover over bars for exact values.",
-            self._content_widget,
+            histogram_section,
         )
         hist_exp.setObjectName("explanation_label")
         hist_exp.setWordWrap(True)
         hist_exp.setStyleSheet("color: #555; font-size: 11px;")
-        content_layout.addWidget(hist_exp)
+        histogram_layout.addWidget(hist_exp)
 
         # Histogram view
-        self._histogram_view = HistogramView(self._content_widget)
-        content_layout.addWidget(self._histogram_view, 2)
+        self._histogram_view = HistogramView(histogram_section)
+        histogram_layout.addWidget(self._histogram_view, 1)
+        content_layout.addWidget(histogram_section, 1)
 
         layout.addWidget(self._content_widget)
         self._content_widget.setVisible(False)

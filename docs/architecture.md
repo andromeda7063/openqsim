@@ -187,8 +187,12 @@ The OpenQASM layer is independent of the PySide6 UI.
 
 The GUI provides:
 
-- gate palette
+- compact vertical symbolic gate palette with tooltips
 - circuit canvas
+- editable OpenQASM 2.0 editor beside the canvas, with parser feedback and
+  explicit application of valid supported programs
+- simulation results below the workspace, with Bloch and probability views
+  side by side
 - New / Save / Save As / Open
 - OpenQASM import/export
 - Run

@@ -1,6 +1,6 @@
 # OpenQSim Release Acceptance Checklist
 
-Manual acceptance procedure for OpenQSim v1.0 on the reference platform
+Manual acceptance procedure for OpenQSim v1.1 on the reference platform
 (**CachyOS**, **Hyprland / native Wayland**, **1920x1080** display resolution).
 
 This document details the manual verification items required by §18 of
@@ -17,17 +17,26 @@ automated test runners.
 - [ ] **Launch**: Run `uv run python -m qsim_gui` from the repo root.
 - [ ] **Startup State Check**:
   - Main window appears cleanly without graphical glitching.
-  - Palette on left, circuit canvas in center (shows 2 wire rows, labeled `q0` and `q1`, 50 columns), results pane on right (Bloch views and histogram view).
+  - Compact symbolic gate palette on the left; circuit canvas in the center; OpenQASM editor on the right; simulation results below the workspace with Bloch views and histogram side by side.
   - Status bar displays: `Save: Clean`, `Simulation: None`.
   - Undo and Redo actions are disabled.
 
 ---
 
+## OpenQASM Editor and Updated Layout (FR-7.6 to FR-7.8)
+
+- [ ] The palette is a narrow vertical column of symbolic gate icons; each icon has an accessible name and useful tooltip.
+- [ ] Circuit single-qubit gates use conventional symbols; CNOT and Toffoli use control dots and target circled-plus symbols.
+- [ ] The QASM editor shows the current circuit export and updates after circuit edits or loading a `.qcs` file.
+- [ ] Invalid QASM syntax is reported and cannot be applied. Syntax-valid unsupported constructs are reported as unsupported.
+- [ ] Applying valid supported QASM to a dirty session offers Save, Don't Save, and Cancel; Cancel preserves the session.
+- [ ] Bloch spheres and the histogram appear side by side in the bottom results area.
+
 ## 2. Window Management & Wayland Behavior (§18.8, NFR-2.7)
 
 - [ ] **Tiling Mode**:
   - In Hyprland tiled layout, verify the window respects tiling boundaries.
-  - Palette, canvas, Bloch spheres, and histogram all fit in the window without overlapping.
+  - Palette, canvas, OpenQASM editor, Bloch spheres, and histogram all fit in the window without overlapping.
 - [ ] **Floating Mode**:
   - Toggle window to floating mode (e.g. `Super+V` or Hyprland toggle-floating binding).
   - Resize floating window between minimum usable dimensions and 1920x1080 full screen.

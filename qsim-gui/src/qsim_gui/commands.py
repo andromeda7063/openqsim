@@ -12,6 +12,7 @@ from libqsim.application.operations import (
     paste,
 )
 from libqsim.application.session import SaveStatus
+from libqsim.qasm.importer import QasmError, import_text
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QWidget
 
@@ -384,6 +385,28 @@ class CommandActions:
             )
         guarded_ok = run_guarded(self._adapter.session, choice, self.handle_save, action)
         return guarded_ok and success
+
+    def handle_apply_qasm(self, source: str) -> bool:
+        """Apply valid OpenQASM text, prompting before discarding a dirty session."""
+        try:
+            circuit = import_text(source)
+        except QasmError as exc:
+            self._ui.show_error("Import Error", str(exc))
+            return False
+
+        def action() -> bool:
+            self._adapter.session.establish_imported(circuit)
+            if self._selection_controller is not None:
+                self._selection_controller.clear_selection()
+            return True
+
+        choice = None
+        if self._adapter.save_status == SaveStatus.DIRTY:
+            choice = self._ui.prompt_save_changes(
+                "Unsaved Changes",
+                "Save changes before applying OpenQASM?",
+            )
+        return run_guarded(self._adapter.session, choice, self.handle_save, action)
 
     def handle_export_qasm(self, path: Path | str | None = None) -> bool:
         """Export circuit to OpenQASM 2.0 file."""

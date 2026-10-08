@@ -6,6 +6,11 @@ This guide walks through a 2-qubit Bell-state circuit.
 
 Launch the application.
 
+The compact gate palette is the vertical icon column at the left; hover over
+an icon to read its tooltip. The circuit uses conventional quantum gate
+symbols. The OpenQASM 2.0 editor is beside the canvas and simulation results
+appear below the workspace.
+
 A new application starts with:
 
 - 2 qubits;
@@ -95,6 +100,8 @@ The `.qcs` file stores the circuit definition, not the simulation result.
 
 OpenQASM import and export convert to and from a circuit only. Importing a
 `.qasm` file creates a new unsaved circuit; use Save As to store it as `.qcs`.
+The OpenQASM editor shows the current circuit and checks syntax as you edit.
+Use **Apply to Circuit** to replace the circuit with valid supported QASM.
 
 ## 9. Useful Keyboard Shortcuts
 

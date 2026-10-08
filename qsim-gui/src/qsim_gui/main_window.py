@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QMenu,
     QScrollArea,
     QSpinBox,
+    QSplitter,
     QStatusBar,
     QToolBar,
     QWidget,
@@ -25,6 +26,7 @@ from qsim_gui.help import HelpWindow, open_help_window
 from qsim_gui.state import SessionAdapter
 from qsim_gui.widgets.circuit_canvas import CircuitCanvas
 from qsim_gui.widgets.gate_palette import GatePalette
+from qsim_gui.widgets.qasm_panel import QasmPanel
 from qsim_gui.widgets.results_panel import ResultsPanel
 
 
@@ -211,9 +213,27 @@ class MainWindow(QMainWindow):
         self._results_panel = ResultsPanel(adapter=self._adapter, parent=self)
         self._results_panel.setObjectName("results_region")
 
-        layout.addWidget(self._palette, 1)
-        layout.addWidget(self._canvas_scroll, 4)
-        layout.addWidget(self._results_panel, 3)
+        self._qasm_panel = QasmPanel(
+            adapter=self._adapter,
+            on_apply=self._commands.handle_apply_qasm,
+            parent=self,
+        )
+
+        workspace = QSplitter(Qt.Orientation.Horizontal, central_widget)
+        workspace.setObjectName("workspace_splitter")
+        workspace.addWidget(self._palette)
+        workspace.addWidget(self._canvas_scroll)
+        workspace.addWidget(self._qasm_panel)
+        workspace.setSizes([60, 1200, 380])
+
+        regions = QSplitter(Qt.Orientation.Vertical, central_widget)
+        regions.setObjectName("main_splitter")
+        regions.addWidget(workspace)
+        regions.addWidget(self._results_panel)
+        regions.setSizes([700, 300])
+        self._results_panel.setMinimumHeight(240)
+
+        layout.addWidget(regions)
 
     def _setup_status_bar(self) -> None:
         status_bar = QStatusBar(self)

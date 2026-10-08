@@ -509,7 +509,19 @@ class CircuitCanvas(QWidget):
         gate_font.setPointSize(gate_font.pointSize() + 1)
         painter.setFont(gate_font)
         painter.setPen(text_color)
-        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, placement.gate_type.value)
+        symbols = {
+            GateType.H: "H",
+            GateType.X: "X",
+            GateType.Y: "Y",
+            GateType.Z: "Z",
+            GateType.S: "S",
+            GateType.T: "T",
+        }
+        painter.drawText(
+            rect,
+            Qt.AlignmentFlag.AlignCenter,
+            symbols.get(placement.gate_type, placement.gate_type.value),
+        )
 
     def _draw_multi_qubit_gate(
         self,
