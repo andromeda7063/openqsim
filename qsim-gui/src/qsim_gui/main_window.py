@@ -6,7 +6,7 @@ from libqsim.application.guarded import run_guarded
 from libqsim.application.operations import plan_resize, resize
 from libqsim.application.session import EditorSession, SaveStatus, SimulationStatus
 from PySide6.QtCore import QSettings, QSize, Qt
-from PySide6.QtGui import QAction, QCloseEvent, QImage
+from PySide6.QtGui import QAction, QCloseEvent, QIcon, QImage
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -174,15 +174,25 @@ class MainWindow(QMainWindow):
         toolbar.setObjectName("main_toolbar")
         self.addToolBar(toolbar)
 
-        toolbar.addAction(self._commands.action_new)
-        toolbar.addAction(self._commands.action_open)
-        toolbar.addAction(self._commands.action_save)
-        toolbar.addAction(self._commands.action_save_as)
+        toolbar_actions = (
+            (self._commands.action_new, "file-plus"),
+            (self._commands.action_open, "folder-open"),
+            (self._commands.action_save, "save"),
+            (self._commands.action_save_as, "file-pen"),
+        )
+        history_actions = (
+            (self._commands.action_undo, "undo-2"),
+            (self._commands.action_redo, "redo-2"),
+        )
+        icon_directory = Path(__file__).parent / "assets" / "icons"
+        for action, icon_name in toolbar_actions:
+            self._add_icon_action(toolbar, action, icon_directory / f"{icon_name}.svg")
+
         toolbar.addSeparator()
-        toolbar.addAction(self._commands.action_undo)
-        toolbar.addAction(self._commands.action_redo)
+        for action, icon_name in history_actions:
+            self._add_icon_action(toolbar, action, icon_directory / f"{icon_name}.svg")
         toolbar.addSeparator()
-        toolbar.addAction(self._commands.action_run)
+        self._add_icon_action(toolbar, self._commands.action_run, icon_directory / "play.svg")
         toolbar.addSeparator()
         toolbar.addAction(self._commands.action_export_qasm)
         toolbar.addAction(self._commands.action_export_image)
@@ -195,6 +205,16 @@ class MainWindow(QMainWindow):
         self._qubit_spin.setValue(self._adapter.circuit.num_qubits)
         self._qubit_spin.valueChanged.connect(self._on_qubit_count_changed)
         toolbar.addWidget(self._qubit_spin)
+
+    @staticmethod
+    def _add_icon_action(toolbar: QToolBar, action: QAction, icon_path: Path) -> None:
+        action.setIcon(QIcon(str(icon_path)))
+        action.setToolTip(action.text())
+        toolbar.addAction(action)
+        button = toolbar.widgetForAction(action)
+        if button is not None:
+            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+            button.setAccessibleName(action.text().removesuffix("..."))
 
     def _setup_central_regions(self) -> None:
         central_widget = QWidget(self)
