@@ -6,7 +6,7 @@ from itertools import pairwise
 from libqsim.simulation.results import SimulationSnapshot
 from PySide6.QtCore import QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QMouseEvent, QPainter, QPalette, QPen
-from PySide6.QtWidgets import QGridLayout, QPushButton, QWidget
+from PySide6.QtWidgets import QGridLayout, QWidget
 from qsim_gui.widgets.projection import BlochProjection
 
 DEFAULT_YAW = math.radians(130.0)
@@ -28,11 +28,7 @@ class BlochSphereWidget(QWidget):
         self.yaw = DEFAULT_YAW
         self.elevation = DEFAULT_ELEVATION
         self._drag_pos: QPointF | None = None
-        self.setFixedSize(176, 218)
-        self._reset_button = QPushButton("Reset View", self)
-        self._reset_button.setObjectName("reset_view_button")
-        self._reset_button.setGeometry(31, 187, 114, 25)
-        self._reset_button.clicked.connect(self.reset_view)
+        self.setFixedSize(176, 184)
         self.set_vector(vector)
 
     def set_vector(self, vector: tuple[float, float, float]) -> None:
@@ -175,7 +171,7 @@ class BlochSphereWidget(QWidget):
         )
 
     def sizeHint(self) -> QSize:
-        return QSize(176, 218)
+        return QSize(176, 184)
 
 
 class BlochView(QWidget):
@@ -189,6 +185,10 @@ class BlochView(QWidget):
         self._grid.setSpacing(6)
         self._grid.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self._spheres: list[BlochSphereWidget] = []
+
+    def reset_views(self) -> None:
+        for sphere in self._spheres:
+            sphere.reset_view()
 
     def set_simulation_result(self, result: SimulationSnapshot | None) -> None:
         if result is None or len(result.bloch_vectors) != len(self._spheres):

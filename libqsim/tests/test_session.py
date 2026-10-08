@@ -40,8 +40,13 @@ def test_trace_navigation_stale_retention_and_failed_run_preservation() -> None:
     session.apply(place_gate(session.circuit, GateType.X, qubit=1, column=3))
     assert session.run().ok
     assert [snapshot.column for snapshot in session.simulation_trace] == [None, 0, 3]
+    assert session.selected_step == 2
+    assert session.selected_snapshot == session.simulation_trace[-1]
+    assert not session.step_navigation_active
+
+    assert session.run(step_mode=True).ok
     assert session.selected_step == 0
-    assert session.selected_snapshot == session.simulation_trace[0]
+    assert session.step_navigation_active
 
     assert session.select_step(2)
     prior_result = session.simulation_result

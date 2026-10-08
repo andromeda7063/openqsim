@@ -57,6 +57,10 @@ class SessionAdapter(QObject):
         return self._session.selected_step
 
     @property
+    def step_navigation_active(self) -> bool:
+        return self._session.step_navigation_active
+
+    @property
     def selected_snapshot(self) -> SimulationSnapshot | None:
         return self._session.selected_snapshot
 
@@ -83,8 +87,10 @@ class SessionAdapter(QObject):
     def run(
         self,
         simulate_fn: Callable[[Circuit], SimulationResult] | None = None,
+        *,
+        step_mode: bool = False,
     ) -> RunOutcome:
-        return self._session.run(simulate_fn=simulate_fn)
+        return self._session.run(simulate_fn=simulate_fn, step_mode=step_mode)
 
     def new(self) -> None:
         self._session.new()

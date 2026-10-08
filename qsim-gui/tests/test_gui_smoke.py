@@ -52,6 +52,11 @@ def test_main_window_construction_and_regions(qapp: QApplication) -> None:
     assert isinstance(window.results_panel._content_widget.layout(), QHBoxLayout)
     assert window.results_panel._bloch_view is not None
     assert window.results_panel._histogram_view is not None
+    assert adapter.run().ok
+    window.show()
+    qapp.processEvents()
+    assert results_region.height() >= 350
+    assert window.results_panel._histogram_view.height() >= 220
 
 
 @pytest.mark.req("FR-3.8")
@@ -116,7 +121,7 @@ def test_run_failure_invokes_error_dialog(qapp: QApplication) -> None:
     assert outcome_run.ok is False
 
     # Simulate triggering via action with failing simulate
-    adapter._session.run = lambda simulate_fn=None: outcome_run  # type: ignore[assignment]
+    adapter._session.run = lambda simulate_fn=None, *, step_mode=False: outcome_run  # type: ignore[assignment]
     window.commands.action_run.trigger()
 
     assert len(ui.errors) == 1

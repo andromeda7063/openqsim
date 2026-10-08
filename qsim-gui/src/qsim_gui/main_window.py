@@ -156,6 +156,7 @@ class MainWindow(QMainWindow):
         # Simulate menu
         simulate_menu = menubar.addMenu("&Simulate")
         simulate_menu.addAction(self._commands.action_run)
+        simulate_menu.addAction(self._commands.action_step_run)
 
         # Help menu
         self._help_menu: QMenu = menubar.addMenu("&Help")
@@ -205,6 +206,9 @@ class MainWindow(QMainWindow):
             self._add_icon_action(toolbar, action, icon_directory / f"{icon_name}.svg")
         toolbar.addSeparator()
         self._add_icon_action(toolbar, self._commands.action_run, icon_directory / "play.svg")
+        self._add_icon_action(
+            toolbar, self._commands.action_step_run, icon_directory / "step-forward.svg"
+        )
         toolbar.addSeparator()
         toolbar.addAction(self._commands.action_export_qasm)
         toolbar.addAction(self._commands.action_export_image)
@@ -275,8 +279,8 @@ class MainWindow(QMainWindow):
         regions.setObjectName("main_splitter")
         regions.addWidget(workspace)
         regions.addWidget(self._results_panel)
-        regions.setSizes([700, 300])
-        self._results_panel.setMinimumHeight(240)
+        regions.setSizes([600, 400])
+        self._results_panel.setMinimumHeight(350)
 
         layout.addWidget(regions)
 

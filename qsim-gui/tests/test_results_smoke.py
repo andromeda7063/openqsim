@@ -92,13 +92,17 @@ def test_results_navigation_updates_selected_snapshot(qapp: QApplication) -> Non
     adapter = SessionAdapter(session)
     panel = ResultsPanel(adapter=adapter)
 
-    assert adapter.run().ok
+    assert adapter.run(step_mode=True).ok
     label = panel.findChild(QLabel, "simulation_step_label")
     previous = panel.findChild(QPushButton, "previous_step_button")
     next_button = panel.findChild(QPushButton, "next_step_button")
     histogram = panel.findChild(HistogramView)
     assert label is not None and previous is not None and next_button is not None
     assert histogram is not None
+    assert previous.isVisibleTo(panel)
+    assert next_button.isVisibleTo(panel)
+    assert previous.icon().isNull() is False
+    assert next_button.icon().isNull() is False
     assert label.text() == "Initial state"
     assert not previous.isEnabled()
     assert next_button.isEnabled()
@@ -113,6 +117,44 @@ def test_results_navigation_updates_selected_snapshot(qapp: QApplication) -> Non
     assert histogram._result is not None
     assert histogram._result.probabilities[2] == pytest.approx(0.5)
     assert histogram._result.probabilities[3] == pytest.approx(0.5)
+
+    assert adapter.run().ok
+    assert label.isHidden()
+    assert previous.isHidden()
+    assert next_button.isHidden()
+    assert adapter.selected_step == len(adapter.simulation_trace) - 1
+
+
+@pytest.mark.req("LC-7", "LC-8", "FR-3.16", "FR-4.16")
+def test_run_actions_switch_navigation_only_after_success(qapp: QApplication) -> None:
+    session = EditorSession()
+    session.apply(place_gate(session.circuit, GateType.H, qubit=0, column=0))
+    adapter = SessionAdapter(session)
+    window = MainWindow(adapter=adapter, ui=StubUserInterface())
+    panel = window.results_panel
+    previous = panel.findChild(QPushButton, "previous_step_button")
+    next_button = panel.findChild(QPushButton, "next_step_button")
+    assert previous is not None and next_button is not None
+    assert not window.commands.action_step_run.icon().isNull()
+    assert previous.isHidden() and next_button.isHidden()
+
+    window.commands.action_step_run.trigger()
+    assert adapter.selected_step == 0
+    assert previous.isVisibleTo(panel) and next_button.isVisibleTo(panel)
+
+    def fail(_circuit):
+        from libqsim.simulation.engine import SimulationError
+
+        raise SimulationError("expected failure")
+
+    assert not adapter.run(simulate_fn=fail).ok
+    assert adapter.step_navigation_active
+    assert previous.isVisibleTo(panel) and next_button.isVisibleTo(panel)
+
+    window.commands.action_run.trigger()
+    assert adapter.selected_step == len(adapter.simulation_trace) - 1
+    assert not adapter.step_navigation_active
+    assert previous.isHidden() and next_button.isHidden()
 
 
 @pytest.mark.req("FR-3.12")

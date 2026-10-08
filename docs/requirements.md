@@ -469,7 +469,7 @@ no saved baseline is always `Dirty`.
 
 - `None` — there is no successful simulation result currently retained.
 - `Current` — the retained simulation result was produced from the current
-  circuit definition by the most recent successful Run.
+  circuit definition by the most recent successful Run or Step Run.
 - `Stale` — a retained simulation result exists, but it was produced from
   an earlier circuit definition.
 
@@ -506,13 +506,15 @@ entries; they move the existing history position.
 **LC-6.** Save and Save As write the current circuit and establish that exact
 circuit definition as the new `Clean` baseline after a successful save.
 
-**LC-7.** Run does not change Save status. A successful Run replaces the
-retained simulation result and trace, selects the initial state, and sets
-Simulation status to `Current`.
+**LC-7.** Run and Step Run do not change Save status. Either successful action
+replaces the retained simulation result and trace and sets Simulation status
+to `Current`. Run selects the final snapshot; Step Run selects the initial
+state and enables trace navigation.
 
-**LC-8.** A failed Run leaves the previously retained result, trace, selected
-step, and Simulation status (`None`, `Current`, or `Stale`) unchanged. It
-reports the failure using the standard error mechanism.
+**LC-8.** A failed Run or Step Run leaves the previously retained result,
+trace, selected step, navigation mode, and Simulation status (`None`,
+`Current`, or `Stale`) unchanged. It reports the failure using the standard
+error mechanism.
 
 **LC-9.** New and successful Load/Open establish the resulting circuit as the
 `Clean` saved baseline (New has no file path; Load/Open sets the file path),
@@ -687,8 +689,9 @@ leave the complete prior state unchanged.
   FR-3.4                  The system shall compute one reduced Bloch  High
                           vector for each qubit.
 
-  FR-3.13                 A successful Run shall retain a display trace  High
-                          containing the initial all-zero state and one
+  FR-3.13                 A successful Run or Step Run shall retain a   High
+                          display trace containing the initial all-zero
+                          state and one
                           snapshot after every occupied circuit column.
                           Each snapshot contains probabilities and Bloch
                           vectors only and is not persisted.
@@ -699,14 +702,14 @@ leave the complete prior state unchanged.
                           gates has only its initial snapshot.
 
   FR-3.5                  Simulation shall execute only when the      High
-                          user activates Run.
+                          user activates Run or Step Run.
 
   FR-3.6                  The application shall not automatically     High
                           re-run the simulator after circuit edits.
 
   FR-3.7                  After a successful circuit mutation and     High
-                          before the next successful Run, any retained
-                          simulation result shall remain visible and
+                          before the next successful Run or Step Run,
+                          any retained simulation result shall remain visible and
                           shall be marked stale.
 
   FR-3.8                  The application shall clearly indicate when High
@@ -719,14 +722,19 @@ leave the complete prior state unchanged.
   FR-3.10                 Measurement markers shall not alter the     High
                           simulated statevector.
 
-  FR-3.11                 Run shall execute synchronously on the       High
-                          GUI thread. Temporary UI blocking during Run
-                          is acceptable for this release.
+  FR-3.11                 Run and Step Run shall execute synchronously High
+                          on the GUI thread. Temporary UI blocking is
+                          acceptable for this release.
 
-  FR-3.12                 A failed Run shall leave the current circuit High
-                          unchanged and shall preserve any previous
-                          simulation result, trace, selected step, and
-                          Simulation status.
+  FR-3.12                 A failed Run or Step Run shall leave the      High
+                          current circuit unchanged and shall preserve any previous
+                          simulation result, trace, selected step,
+                          navigation mode, and Simulation status.
+
+  FR-3.16                 Run and Step Run shall use the same exact   High
+                          simulation. Run displays the final snapshot;
+                          Step Run displays the initial snapshot and
+                          reveals trace navigation.
 
   FR-3.15                 Browsing snapshots shall not invoke the          High
                           simulator or change the circuit, history, Save
@@ -792,16 +800,18 @@ leave the complete prior state unchanged.
 
   FR-4.10                 Bloch-sphere and        High
                           histogram views shall refresh after a
-                          successful Run and when the selected trace
-                          step changes without resetting Bloch camera
+                          successful Run or Step Run and when the
+                          selected trace step changes without resetting Bloch camera
                           orientations while the result view remains open.
 
   FR-4.15                 The interface shall identify the selected     High
                           step as the initial state or the state after a
                           particular occupied column.
 
-  FR-4.16                 Previous and Next controls shall navigate     High
-                          snapshots without rerunning. Previous is
+  FR-4.16                 Icon-only Previous and Next controls shall  High
+                          appear after Step Run and navigate snapshots
+                          without rerunning. They shall be hidden after
+                          Run. Previous is
                           disabled at the initial state and Next is
                           disabled at the final state.
 
@@ -845,8 +855,9 @@ leave the complete prior state unchanged.
                           Bloch-vector (x, y, z) coordinates independently
                           of camera orientation.
 
-  FR-4.21                 Each sphere shall provide a Reset View control that Medium
-                          returns that sphere to its default orientation.
+  FR-4.21                 One icon-only Reset View control shall      Medium
+                          return all spheres to their default
+                          orientations.
 
   FR-4.22                 Selecting a simulation snapshot shall update the  High
                           displayed vector while preserving each sphere's
@@ -1235,7 +1246,7 @@ The importer shall reject:
                           stack traces.
 
   NFR-2.3                 The main window shall keep the circuit  Medium
-                          canvas, step navigation, and result
+                          canvas, Step Run navigation, and result
                           visualisations accessible
                           without requiring separate application windows.
 
@@ -1264,7 +1275,7 @@ The importer shall reject:
                           shall all be available in the
                           same window. Simulation results
                           shall appear below the workspace with step
-                          controls and the selected-step label.
+                          controls and the selected-step label after Step Run.
                           Drag/drop,
                           selection, paste, and arrow-key
                           movement shall behave identically
@@ -1274,7 +1285,7 @@ The importer shall reject:
 
   NFR-2.8                 At the reference 1920x1080 layout, Bloch wireframes, Medium
                           axis labels, vector indicators, numeric coordinates,
-                          and Reset View controls shall remain readable and
+                          and the Reset View control shall remain readable and
                           accessible alongside the histogram.
   -----------------------------------------------------------------------
 
@@ -1520,6 +1531,7 @@ The main window shall provide:
 -   Export image;
 -   Change target command for a selected CNOT or Toffoli;
 -   Run;
+-   Step Run;
 -   visible Save status (`Clean` or `Dirty`);
 -   visible Simulation status (`None`, `Current`, or `Stale`);
 -   the standard error presentation mechanism.
@@ -1599,7 +1611,7 @@ Rejected drag/drop, movement, multi-selection movement, and paste
 operations shall leave the circuit unchanged and shall not create an
 undo-history entry.
 
-A failed Run shall leave the current circuit unchanged and shall preserve
+A failed Run or Step Run shall leave the current circuit unchanged and shall preserve
 any previous result and its Simulation status unchanged.
 
 A failed Load/Open or Import operation shall leave the current circuit,
@@ -1844,8 +1856,8 @@ The release shall be accepted only when all of the following are true:
 -   Qubit resizing follows the confirmation rules and records a
     destructive resize as one mutation.
 -   Validation prevents invalid circuits from reaching simulation.
--   Run produces the required statevector-derived outputs.
--   Run is synchronous in the GUI thread for this release.
+-   Run and Step Run produce the required statevector-derived outputs.
+-   Run and Step Run are synchronous in the GUI thread for this release.
 -   Save/load preserves the circuit definition.
 -   New/Load/Import clear simulation results.
 -   OpenQASM import/export works for the defined subset and preserves
@@ -2042,7 +2054,7 @@ The following decisions are normative for the current release:
     successful Import creates a new unsaved session that is `Dirty`. All
     three clear simulation results to `None`.
 16. Run occurs synchronously on the GUI thread in the current release.
-17. Run changes only simulation state; it does not affect Save status.
+17. Run and Step Run change only simulation state; they do not affect Save status.
 18. A failed Run leaves any previous result and its Simulation status
     unchanged.
 19. Load/Open, Import, and Load Example are atomic; failure leaves the complete prior

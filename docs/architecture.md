@@ -239,9 +239,9 @@ SimulationStatus
 A successful circuit mutation recalculates Save status against the saved
 baseline. If a simulation result exists, the result becomes stale.
 
-A successful Run replaces the retained simulation result and trace, selects
-the initial state, and makes it current
-without changing Save status.
+A successful Run or Step Run replaces the retained simulation result and trace
+and makes it current without changing Save status. Run selects the final
+snapshot; Step Run selects the initial state and enables trace navigation.
 
 Undo and Redo change the circuit and recalculate Save status. They make any
 retained simulation result stale and do not restore historical simulation

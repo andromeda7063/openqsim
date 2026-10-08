@@ -6,4 +6,5 @@ connection to display them. The Lucide license is included in
 `LUCIDE-LICENSE.txt`.
 
 Icons used: `file-plus`, `folder-open`, `save`, `file-pen`, `undo-2`,
-`redo-2`, and `play`.
+`redo-2`, `play`, `step-forward`, `chevron-left`, `chevron-right`, and
+`rotate-ccw`.

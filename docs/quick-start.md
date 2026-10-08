@@ -57,6 +57,9 @@ CNOT then produces the Bell state.
 
 Activate **Run**.
 
+Use **Step Run** to start at the initial state and show Previous and Next
+controls for browsing the circuit snapshots. Run shows the final result.
+
 Simulation does not happen automatically when the circuit is edited.
 
 A successful Run produces:
@@ -87,7 +90,7 @@ The Bloch vector represents the reduced state of that qubit. For an entangled
 state, the reduced vector may lie inside the sphere rather than on its surface.
 The `(x, y, z)` values below each sphere show its vector coordinates. Left-drag
 inside a sphere to rotate its wireframe view; other spheres keep their own
-angles. Use **Reset View** below a sphere to restore its original angle.
+angles. Use **Reset View** above the spheres to restore all original angles.
 Stepping through simulation snapshots changes the vectors without resetting
 the view angles.
 

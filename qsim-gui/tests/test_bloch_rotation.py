@@ -55,7 +55,7 @@ def test_drag_is_independent_view_state_and_reset(qapp: QApplication) -> None:
     session.apply(place_gate(session.circuit, GateType.H, qubit=0, column=0))
     adapter = SessionAdapter(session)
     window = MainWindow(adapter=adapter, ui=StubUserInterface())
-    assert adapter.run().ok
+    assert adapter.run(step_mode=True).ok
     spheres = window._results_panel._bloch_view._spheres
     assert len(spheres) == 2
     before = (
@@ -92,10 +92,14 @@ def test_drag_is_independent_view_state_and_reset(qapp: QApplication) -> None:
     drag(spheres[0], QPointF(5, 5), QPointF(30, 20))
     assert (spheres[0].yaw, spheres[0].elevation) == angle
 
-    button = spheres[0].findChild(QPushButton, "reset_view_button")
+    button = window.results_panel.findChild(QPushButton, "reset_view_button")
     assert button is not None
+    assert button.icon().isNull() is False
+    assert not spheres[0].findChildren(QPushButton)
+    drag(spheres[1], QPointF(88, 93), QPointF(110, 108))
     button.click()
     assert (spheres[0].yaw, spheres[0].elevation) == (DEFAULT_YAW, DEFAULT_ELEVATION)
+    assert (spheres[1].yaw, spheres[1].elevation) == (DEFAULT_YAW, DEFAULT_ELEVATION)
 
 
 @pytest.mark.req("FR-4.10", "FR-4.20", "FR-4.22", "FR-4.23")
@@ -106,7 +110,7 @@ def test_snapshot_preserves_angle_and_export_matches_view(
     session.apply(place_gate(session.circuit, GateType.H, qubit=0, column=0))
     adapter = SessionAdapter(session)
     window = MainWindow(adapter=adapter, ui=StubUserInterface())
-    assert adapter.run().ok
+    assert adapter.run(step_mode=True).ok
     sphere = window._results_panel._bloch_view._spheres[0]
     initial_vector = sphere.vector
     assert "z = 1.0000" in sphere.toolTip()

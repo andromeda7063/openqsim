@@ -72,6 +72,7 @@ class EditorSession:
         self._simulation_result: SimulationResult | None = None
         self._simulation_trace: tuple[SimulationSnapshot, ...] = ()
         self._selected_step = 0
+        self._step_navigation_active = False
         self._simulation_status: SimulationStatus = SimulationStatus.NONE
         self._history: History = History()
         self._subscribers: list[Callable[[], None]] = []
@@ -119,6 +120,11 @@ class EditorSession:
     def selected_step(self) -> int:
         """Index of the currently displayed snapshot."""
         return self._selected_step
+
+    @property
+    def step_navigation_active(self) -> bool:
+        """Whether the retained trace was opened through Step Run."""
+        return self._step_navigation_active
 
     @property
     def selected_snapshot(self) -> SimulationSnapshot | None:
@@ -186,11 +192,14 @@ class EditorSession:
     def run(
         self,
         simulate_fn: Callable[[Circuit], SimulationResult] | None = None,
+        *,
+        step_mode: bool = False,
     ) -> RunOutcome:
         """Validate and simulate the current circuit synchronously.
 
         Validates first; if invalid, simulation is not invoked.
-        On success, replaces the simulation result and sets SimulationStatus to CURRENT.
+        On success, replaces the result and selects the final snapshot for Run,
+        or the initial snapshot for Step Run.
         On failure, leaves existing result and simulation status unchanged.
         """
         errors = validate(self._circuit)
@@ -208,7 +217,8 @@ class EditorSession:
 
         self._simulation_result = res
         self._simulation_trace = trace
-        self._selected_step = 0
+        self._selected_step = 0 if step_mode else len(trace) - 1
+        self._step_navigation_active = step_mode
         self._simulation_status = SimulationStatus.CURRENT
         self._notify()
         return RunOutcome(ok=True)
@@ -221,6 +231,7 @@ class EditorSession:
         self._simulation_result = None
         self._simulation_trace = ()
         self._selected_step = 0
+        self._step_navigation_active = False
         self._simulation_status = SimulationStatus.NONE
         self._history.clear()
         self._notify()
@@ -233,6 +244,7 @@ class EditorSession:
         self._simulation_result = None
         self._simulation_trace = ()
         self._selected_step = 0
+        self._step_navigation_active = False
         self._simulation_status = SimulationStatus.NONE
         self._history.clear()
         self._notify()
@@ -245,6 +257,7 @@ class EditorSession:
         self._simulation_result = None
         self._simulation_trace = ()
         self._selected_step = 0
+        self._step_navigation_active = False
         self._simulation_status = SimulationStatus.NONE
         self._history.clear()
         self._notify()

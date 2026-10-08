@@ -137,6 +137,9 @@ class CommandActions:
         self.action_run.setEnabled(True)
         self.action_run.triggered.connect(self._handle_run)
 
+        self.action_step_run = QAction("Step Run", parent)
+        self.action_step_run.triggered.connect(self._handle_step_run)
+
         # Connect adapter changes to action update
         self._adapter.changed.connect(self.update_actions)
 
@@ -161,6 +164,7 @@ class CommandActions:
         self.action_undo.setEnabled(self._adapter.can_undo)
         self.action_redo.setEnabled(self._adapter.can_redo)
         self.action_run.setEnabled(True)
+        self.action_step_run.setEnabled(True)
 
         has_gates = len(self._adapter.circuit.placements) > 0
         self.action_select_all.setEnabled(has_gates)
@@ -218,7 +222,13 @@ class CommandActions:
         self._adapter.redo()
 
     def _handle_run(self) -> None:
-        outcome = self._adapter.run()
+        self._run(step_mode=False)
+
+    def _handle_step_run(self) -> None:
+        self._run(step_mode=True)
+
+    def _run(self, *, step_mode: bool) -> None:
+        outcome = self._adapter.run(step_mode=step_mode)
         if not outcome.ok:
             error_text = (
                 "\n".join(outcome.messages) if outcome.messages else "Simulation execution failed."
