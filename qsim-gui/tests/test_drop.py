@@ -112,7 +112,7 @@ def test_canvas_drop_event_end_to_end(qapp: QApplication) -> None:
     assert session.circuit.placements[0].gate_type == GateType.H
     assert len(ui.errors) == 0
 
-    # 2. Drop outside grid bounds: ignored silently
+    # 2. A release in the canvas margin reports a boundary error.
     event_outside = QDropEvent(
         QPointF(0, 0),
         Qt.DropAction.CopyAction,
@@ -122,7 +122,8 @@ def test_canvas_drop_event_end_to_end(qapp: QApplication) -> None:
     )
     canvas.dropEvent(event_outside)
     assert len(session.circuit.placements) == 1
-    assert len(ui.errors) == 0
+    assert len(ui.errors) == 1
+    assert "outside" in ui.errors[0][1]
 
     # 3. Drop invalid (collision at (0, 0)): triggers ui.show_error
     mime_x = encode_gate_mime(GateType.X)
@@ -135,7 +136,7 @@ def test_canvas_drop_event_end_to_end(qapp: QApplication) -> None:
     )
     canvas.dropEvent(event_invalid)
     assert len(session.circuit.placements) == 1
-    assert len(ui.errors) == 1
-    title, msg = ui.errors[0]
+    assert len(ui.errors) == 2
+    title, msg = ui.errors[-1]
     assert title == "Placement Error"
     assert len(msg) > 0

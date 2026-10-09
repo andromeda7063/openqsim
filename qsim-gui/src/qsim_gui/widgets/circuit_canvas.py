@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from libqsim.application.operations import OperationResult, delete_gates, place_gate
@@ -48,6 +49,12 @@ def handle_drop(
     return res
 
 
+@dataclass(frozen=True)
+class PreviewFeedback:
+    status: str
+    reason: str = ""
+
+
 class CircuitCanvas(QWidget):
     """Widget rendering quantum circuit with QPainter and supporting gate drops."""
 
@@ -71,6 +78,8 @@ class CircuitCanvas(QWidget):
         self._controller.subscribe(self.update)
         self._drag_cells: list[tuple[int, int]] = []
         self._drag_preview: GatePlacement | None = None
+        self._drag_feedback: PreviewFeedback | None = None
+        self._move_feedback: PreviewFeedback | None = None
         self._marquee_pixel_start: QPoint | None = None
         self._marquee_pixel_current: QPoint | None = None
         self._scroll_area: QScrollArea | None = None
@@ -112,6 +121,16 @@ class CircuitCanvas(QWidget):
             )
             for p in self._controller.selection
         )
+
+    @property
+    def preview_feedback(self) -> PreviewFeedback | None:
+        if self._controller.is_dragging_move:
+            return self._move_feedback
+        return self._drag_feedback
+
+    @staticmethod
+    def _feedback(result: OperationResult) -> PreviewFeedback:
+        return PreviewFeedback(result.status, result.messages[0] if result.messages else "")
 
     def reveal_temporary_column(self, column: int) -> None:
         """Extend the active gesture's visible grid without editing the circuit."""
@@ -183,6 +202,7 @@ class CircuitCanvas(QWidget):
 
     def dragLeaveEvent(self, event: QDragLeaveEvent) -> None:
         self._clear_temporary_columns()
+        self._drag_feedback = None
         if self._drag_cells or self._drag_preview is not None:
             self._drag_cells = []
             self._drag_preview = None
@@ -191,6 +211,7 @@ class CircuitCanvas(QWidget):
 
     def dropEvent(self, event: QDropEvent) -> None:
         self._clear_temporary_columns()
+        self._drag_feedback = None
         if self._drag_cells or self._drag_preview is not None:
             self._drag_cells = []
             self._drag_preview = None
@@ -209,7 +230,11 @@ class CircuitCanvas(QWidget):
             num_columns=self._revealed_columns,
         )
         if cell is None:
-            event.ignore()
+            if self.rect().contains(pt) and self._ui is not None:
+                self._ui.show_error("Placement Error", "Placement is outside the circuit grid.")
+                event.acceptProposedAction()
+            else:
+                event.ignore()
             return
 
         res = handle_drop(self._adapter.session, gate_type, cell)
@@ -225,10 +250,13 @@ class CircuitCanvas(QWidget):
             num_columns=self._revealed_columns,
         )
         if cell is None:
+            self._drag_feedback = PreviewFeedback(
+                "rejected", "Placement is outside the circuit grid."
+            )
             if self._drag_cells or self._drag_preview is not None:
                 self._drag_cells = []
                 self._drag_preview = None
-                self.update()
+            self.update()
             return
 
         gate_type = decode_gate_mime(mime_data)
@@ -246,6 +274,7 @@ class CircuitCanvas(QWidget):
             controls, targets = (), (q,)
 
         preview = GatePlacement(gate_type, targets, controls, c)
+        self._drag_feedback = self._feedback(place_gate(self._adapter.circuit, gate_type, q, c))
 
         if self._drag_cells != cells or self._drag_preview != preview:
             self._drag_cells = cells
@@ -311,6 +340,14 @@ class CircuitCanvas(QWidget):
             )
             if cell is not None:
                 self._controller.update_drag_move(cell, (pt.x(), pt.y()))
+                d_q, d_c = self._controller.drag_delta
+                self._move_feedback = self._feedback(
+                    self._controller.move_selection(self._adapter.circuit, d_q, d_c)
+                )
+            else:
+                self._move_feedback = PreviewFeedback(
+                    "rejected", "Move is outside the circuit grid."
+                )
             self.update()
         elif self._controller.is_marquee_active and self._marquee_pixel_start is not None:
             self._marquee_pixel_current = pt
@@ -344,7 +381,14 @@ class CircuitCanvas(QWidget):
             )
             d_q, d_c = self._controller.drag_delta
             action = self._controller.end_drag_move(self._adapter.circuit, cell)
-            if action == "move" and (d_q != 0 or d_c != 0):
+            self._move_feedback = None
+            if not self.rect().contains(pt):
+                self.update()
+                return
+            if cell is None and action == "move":
+                if self._ui is not None:
+                    self._ui.show_error("Move Error", "Move is outside the circuit grid.")
+            elif action == "move" and (d_q != 0 or d_c != 0):
                 res = self._controller.move_selection(self._adapter.circuit, d_q, d_c)
                 if res.status == "applied":
                     self._adapter.apply(res)
@@ -516,15 +560,33 @@ class CircuitCanvas(QWidget):
 
         # Draw drag hover highlights
         if self._drag_cells:
-            highlight_color = pal.color(QPalette.ColorRole.Highlight)
+            feedback = self.preview_feedback
+            valid = feedback is None or feedback.status == "applied"
+            highlight_color = pal.color(
+                QPalette.ColorRole.Highlight if valid else QPalette.ColorRole.BrightText
+            )
             fill_color = QColor(highlight_color)
-            fill_color.setAlpha(80)
-            painter.setPen(QPen(highlight_color, 2.0, Qt.PenStyle.DashLine))
+            fill_color.setAlpha(45)
+            painter.setPen(
+                QPen(
+                    highlight_color,
+                    2.0,
+                    Qt.PenStyle.SolidLine if valid else Qt.PenStyle.DashLine,
+                )
+            )
             painter.setBrush(fill_color)
             for q_cell, c_cell in self._drag_cells:
                 if 0 <= q_cell < num_qubits and 0 <= c_cell < 50:
                     hx, hy, hw, hh = self._geo.cell_to_rect(q_cell, c_cell)
                     painter.drawRoundedRect(QRectF(hx + 2, hy + 2, hw - 4, hh - 4), 4, 4)
+
+        if self.preview_feedback is not None and self.preview_feedback.status == "rejected":
+            painter.setPen(pal.color(QPalette.ColorRole.BrightText))
+            painter.drawText(
+                QRectF(margins.left, 0, max(0, self.width() - margins.left), margins.top - 3),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                self.preview_feedback.reason,
+            )
 
         # 3. Draw gate placements
         circuit = self._adapter.circuit
@@ -532,7 +594,9 @@ class CircuitCanvas(QWidget):
             is_selected = p in self._controller.selection
             self._draw_gate(painter, p, window_text, box_bg, is_selected)
 
-        if self._drag_preview is not None:
+        if self._drag_preview is not None and all(
+            0 <= q < num_qubits for q in self._drag_preview.occupied_qubits
+        ):
             painter.save()
             painter.setOpacity(0.7)
             self._draw_gate(painter, self._drag_preview, window_text, box_bg)
@@ -569,21 +633,31 @@ class CircuitCanvas(QWidget):
         # 5. Draw move preview outline if dragging move
         if self._controller.is_dragging_move:
             d_q, d_c = self._controller.drag_delta
-            if d_q != 0 or d_c != 0:
-                highlight_color = pal.color(QPalette.ColorRole.Highlight)
-                outline_pen = QPen(highlight_color, 2.0, Qt.PenStyle.DashLine)
-                painter.setPen(outline_pen)
-                painter.setBrush(Qt.BrushStyle.NoBrush)
-                for p in self._controller.selection:
-                    tgt_col = p.column + d_c
-                    tgt_qubits = [q + d_q for q in p.occupied_qubits]
-                    if all(0 <= q < num_qubits for q in tgt_qubits) and 0 <= tgt_col < 50:
-                        min_q = min(tgt_qubits)
-                        max_q = max(tgt_qubits)
-                        hx, hy, hw, _ = self._geo.cell_to_rect(min_q, tgt_col)
-                        _, b_hy, _, b_hh = self._geo.cell_to_rect(max_q, tgt_col)
-                        total_h = (b_hy + b_hh) - hy
-                        painter.drawRoundedRect(QRectF(hx + 3, hy + 3, hw - 6, total_h - 6), 5, 5)
+            feedback = self._move_feedback
+            invalid = feedback is not None and feedback.status == "rejected"
+            neutral = feedback is not None and feedback.status == "noop"
+            cue_color = pal.color(
+                QPalette.ColorRole.BrightText if invalid else QPalette.ColorRole.Highlight
+            )
+            cue_style = (
+                Qt.PenStyle.DashLine
+                if invalid
+                else Qt.PenStyle.DotLine
+                if neutral
+                else Qt.PenStyle.SolidLine
+            )
+            painter.setPen(QPen(cue_color, 2.0, cue_style))
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            for p in self._controller.selection:
+                tgt_col = p.column + d_c
+                tgt_qubits = [q + d_q for q in p.occupied_qubits]
+                if all(0 <= q < num_qubits for q in tgt_qubits) and 0 <= tgt_col < 50:
+                    min_q = min(tgt_qubits)
+                    max_q = max(tgt_qubits)
+                    hx, hy, hw, _ = self._geo.cell_to_rect(min_q, tgt_col)
+                    _, b_hy, _, b_hh = self._geo.cell_to_rect(max_q, tgt_col)
+                    total_h = (b_hy + b_hh) - hy
+                    painter.drawRoundedRect(QRectF(hx + 3, hy + 3, hw - 6, total_h - 6), 5, 5)
 
     def _draw_gate(
         self,

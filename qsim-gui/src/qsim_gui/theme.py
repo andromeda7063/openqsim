@@ -28,7 +28,7 @@ def apply_theme(app: QApplication, theme: Theme) -> None:
     palette.setColor(QPalette.ColorRole.Text, QColor("#e6e8ee"))
     palette.setColor(QPalette.ColorRole.Button, QColor("#252936"))
     palette.setColor(QPalette.ColorRole.ButtonText, QColor("#e6e8ee"))
-    palette.setColor(QPalette.ColorRole.BrightText, QColor("#ffffff"))
+    palette.setColor(QPalette.ColorRole.BrightText, QColor("#ff8585"))
     palette.setColor(QPalette.ColorRole.Highlight, QColor(accent))
     palette.setColor(QPalette.ColorRole.HighlightedText, QColor("#101217"))
     palette.setColor(QPalette.ColorRole.Mid, QColor("#414653"))

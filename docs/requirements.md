@@ -262,6 +262,12 @@ Measurement has deliberately simplified semantics in this release:
                           standard error mechanism shall report the
                           reason.
 
+                          A release within the canvas widget but outside a
+                          valid grid cell is a rejected placement and shall
+                          report a boundary error; a drag cancelled or
+                          released outside the canvas widget is not an
+                          attempted placement.
+
   FR-1.6                  The system shall allow the user to delete  High
                           selected gate placements.
 
@@ -649,6 +655,18 @@ leave the complete prior state unchanged.
                           display that gate’s current control and target
                           roles. The committed gate shall have exactly the
                           roles shown immediately before a valid release.
+
+  FR-1.54                 During placement or movement over the canvas, the  High
+                          editor shall evaluate the complete candidate
+                          operation without committing it. It shall
+                          distinguish a valid candidate, a rejected
+                          candidate, and a zero-cell move. A rejected
+                          candidate shall show a concise plain-language
+                          reason and a visually distinct invalid cue. Preview
+                          evaluation shall not change the circuit, statuses,
+                          selection, clipboard, or undo/redo history. On
+                          release, the operation shall follow the normal
+                          atomic mutation and error rules.
   -----------------------------------------------------------------------
 
 ## 7. Validation requirements
@@ -1318,6 +1336,17 @@ The importer shall reject:
                           axis labels, vector indicators, numeric coordinates,
                           and the Reset View control shall remain readable and
                           accessible alongside the histogram.
+
+  NFR-2.9                 Canvas selection outlines, gate ghosts, and  Medium
+                          valid/invalid placement cues shall use colors
+                          supplied by the active Dark or Dark Purple theme.
+                          Their visible outlines or symbols shall have a
+                          contrast ratio of at least 3:1 against the canvas
+                          background after transparency is applied. Any
+                          explanatory text shall have a contrast ratio of at
+                          least 4.5:1. Valid and invalid states shall also
+                          differ by outline style or symbol, so color is not
+                          their sole distinction.
   -----------------------------------------------------------------------
 
 ### 13.3 Reliability
