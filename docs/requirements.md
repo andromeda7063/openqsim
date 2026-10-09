@@ -628,6 +628,17 @@ leave the complete prior state unchanged.
                           gesture ends, it shall remove temporary columns
                           that are no longer needed by the circuit or
                           viewport.
+
+  FR-1.52                 During a palette-to-canvas drag over a revealed  High
+                          grid cell, the editor shall draw a translucent
+                          ghost of the gate that would be placed at that
+                          cell. The ghost shall use the same gate symbol and
+                          occupied-wire shape as a committed placement. It
+                          shall update when the candidate cell changes and
+                          disappear when the drag is dropped, leaves the
+                          canvas, or is cancelled. Drawing a ghost shall not
+                          change the circuit, statuses, selection, or
+                          undo/redo history.
   -----------------------------------------------------------------------
 
 ## 7. Validation requirements

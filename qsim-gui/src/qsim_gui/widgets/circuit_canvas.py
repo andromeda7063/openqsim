@@ -70,6 +70,7 @@ class CircuitCanvas(QWidget):
         self._controller = controller if controller is not None else SelectionController()
         self._controller.subscribe(self.update)
         self._drag_cells: list[tuple[int, int]] = []
+        self._drag_preview: GatePlacement | None = None
         self._marquee_pixel_start: QPoint | None = None
         self._marquee_pixel_current: QPoint | None = None
         self._scroll_area: QScrollArea | None = None
@@ -92,6 +93,10 @@ class CircuitCanvas(QWidget):
     @property
     def revealed_columns(self) -> int:
         return self._revealed_columns
+
+    @property
+    def drag_preview(self) -> GatePlacement | None:
+        return self._drag_preview
 
     def reveal_temporary_column(self, column: int) -> None:
         """Extend the active gesture's visible grid without editing the circuit."""
@@ -163,15 +168,17 @@ class CircuitCanvas(QWidget):
 
     def dragLeaveEvent(self, event: QDragLeaveEvent) -> None:
         self._clear_temporary_columns()
-        if self._drag_cells:
+        if self._drag_cells or self._drag_preview is not None:
             self._drag_cells = []
+            self._drag_preview = None
             self.update()
         event.accept()
 
     def dropEvent(self, event: QDropEvent) -> None:
         self._clear_temporary_columns()
-        if self._drag_cells:
+        if self._drag_cells or self._drag_preview is not None:
             self._drag_cells = []
+            self._drag_preview = None
             self.update()
 
         gate_type = decode_gate_mime(event.mimeData())
@@ -203,22 +210,31 @@ class CircuitCanvas(QWidget):
             num_columns=self._revealed_columns,
         )
         if cell is None:
-            if self._drag_cells:
+            if self._drag_cells or self._drag_preview is not None:
                 self._drag_cells = []
+                self._drag_preview = None
                 self.update()
             return
 
         gate_type = decode_gate_mime(mime_data)
+        if gate_type is None:
+            return
         q, c = cell
         if gate_type == GateType.CNOT:
             cells = [(q, c), (q + 1, c)]
+            controls, targets = (q,), (q + 1,)
         elif gate_type == GateType.Toffoli:
             cells = [(q, c), (q + 1, c), (q + 2, c)]
+            controls, targets = (q, q + 1), (q + 2,)
         else:
             cells = [(q, c)]
+            controls, targets = (), (q,)
 
-        if self._drag_cells != cells:
+        preview = GatePlacement(gate_type, targets, controls, c)
+
+        if self._drag_cells != cells or self._drag_preview != preview:
             self._drag_cells = cells
+            self._drag_preview = preview
             self.update()
 
     def scroll_selection_into_view(self) -> None:
@@ -511,6 +527,20 @@ class CircuitCanvas(QWidget):
                 self._draw_single_qubit_gate(
                     painter, p, window_text, box_bg, is_selected=is_selected
                 )
+
+        if self._drag_preview is not None:
+            painter.save()
+            painter.setOpacity(0.7)
+            preview = self._drag_preview
+            if preview.gate_type in (GateType.CNOT, GateType.Toffoli):
+                self._draw_multi_qubit_gate(painter, preview, window_text, box_bg)
+            elif preview.gate_type == GateType.Measurement:
+                self._draw_measurement(
+                    painter, preview.targets[0], preview.column, window_text, box_bg
+                )
+            else:
+                self._draw_single_qubit_gate(painter, preview, window_text, box_bg)
+            painter.restore()
 
         # 4. Draw marquee rectangle if active
         if (
