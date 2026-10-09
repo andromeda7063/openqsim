@@ -8,7 +8,7 @@ from libqsim.application.operations import OperationResult, delete_gates, place_
 from libqsim.application.selection import gate_at
 from libqsim.application.session import EditorSession
 from libqsim.domain.models import GatePlacement, GateType
-from PySide6.QtCore import QMimeData, QPoint, QPointF, QRectF, QSize, Qt
+from PySide6.QtCore import QEvent, QMimeData, QPoint, QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import (
     QColor,
     QContextMenuEvent,
@@ -24,7 +24,7 @@ from PySide6.QtGui import (
     QPalette,
     QPen,
 )
-from PySide6.QtWidgets import QMenu, QWidget
+from PySide6.QtWidgets import QMenu, QScrollArea, QWidget
 from qsim_gui.dialogs import UserInterface
 from qsim_gui.state import SessionAdapter
 from qsim_gui.widgets.gate_palette import decode_gate_mime
@@ -72,6 +72,9 @@ class CircuitCanvas(QWidget):
         self._drag_cells: list[tuple[int, int]] = []
         self._marquee_pixel_start: QPoint | None = None
         self._marquee_pixel_current: QPoint | None = None
+        self._scroll_area: QScrollArea | None = None
+        self._revealed_columns = 50
+        self._temporary_column = -1
         self.setAcceptDrops(True)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
@@ -86,15 +89,61 @@ class CircuitCanvas(QWidget):
     def grid_geometry(self) -> GridGeometry:
         return self._geo
 
+    @property
+    def revealed_columns(self) -> int:
+        return self._revealed_columns
+
+    def reveal_temporary_column(self, column: int) -> None:
+        """Extend the active gesture's visible grid without editing the circuit."""
+        column = min(49, column)
+        if column != self._temporary_column:
+            self._temporary_column = column
+            self._update_dimensions()
+            self.update()
+
+    def _clear_temporary_columns(self) -> None:
+        if self._temporary_column != -1:
+            self._temporary_column = -1
+            self._update_dimensions()
+
+    def showEvent(self, event) -> None:  # type: ignore[no-untyped-def]
+        super().showEvent(event)
+        parent = self.parentWidget()
+        if parent is not None and isinstance(parent.parentWidget(), QScrollArea):
+            area = parent.parentWidget()
+            if area is not self._scroll_area:
+                if self._scroll_area is not None:
+                    self._scroll_area.viewport().removeEventFilter(self)
+                self._scroll_area = area
+                area.viewport().installEventFilter(self)
+            self._update_dimensions()
+
+    def eventFilter(self, watched, event) -> bool:  # type: ignore[no-untyped-def]
+        if (
+            getattr(self, "_scroll_area", None) is not None
+            and watched is self._scroll_area.viewport()
+            and event.type() == QEvent.Type.Resize
+        ):
+            self._update_dimensions()
+        return super().eventFilter(watched, event)
+
     def _update_dimensions(self) -> None:
         num_qubits = self._adapter.circuit.num_qubits
-        w, h = self._geo.content_size(num_qubits=num_qubits, num_columns=50)
+        viewport = self._scroll_area.viewport() if self._scroll_area is not None else None
+        visible = self._geo.visible_columns(viewport.width()) if viewport is not None else 50
+        highest = max((p.column for p in self._adapter.circuit.placements), default=-1)
+        self._revealed_columns = min(50, max(visible, highest + 2, self._temporary_column + 1))
+        w, h = self._geo.content_size(num_qubits, self._revealed_columns)
+        if viewport is not None:
+            if self._revealed_columns <= visible:
+                w = viewport.width()
+            h = max(h, viewport.height())
         self.setFixedSize(w, h)
         self.updateGeometry()
 
     def sizeHint(self) -> QSize:
         num_qubits = self._adapter.circuit.num_qubits
-        w, h = self._geo.content_size(num_qubits=num_qubits, num_columns=50)
+        w, h = self._geo.content_size(num_qubits=num_qubits, num_columns=self._revealed_columns)
         return QSize(w, h)
 
     def _on_session_changed(self) -> None:
@@ -113,12 +162,14 @@ class CircuitCanvas(QWidget):
             self._update_drag_highlight(event.position().toPoint(), event.mimeData())
 
     def dragLeaveEvent(self, event: QDragLeaveEvent) -> None:
+        self._clear_temporary_columns()
         if self._drag_cells:
             self._drag_cells = []
             self.update()
         event.accept()
 
     def dropEvent(self, event: QDropEvent) -> None:
+        self._clear_temporary_columns()
         if self._drag_cells:
             self._drag_cells = []
             self.update()
@@ -130,7 +181,10 @@ class CircuitCanvas(QWidget):
 
         pt = event.position().toPoint()
         cell = self._geo.point_to_cell(
-            pt.x(), pt.y(), num_qubits=self._adapter.circuit.num_qubits, num_columns=50
+            pt.x(),
+            pt.y(),
+            num_qubits=self._adapter.circuit.num_qubits,
+            num_columns=self._revealed_columns,
         )
         if cell is None:
             event.ignore()
@@ -143,7 +197,10 @@ class CircuitCanvas(QWidget):
 
     def _update_drag_highlight(self, pt: QPoint, mime_data: QMimeData) -> None:
         cell = self._geo.point_to_cell(
-            pt.x(), pt.y(), num_qubits=self._adapter.circuit.num_qubits, num_columns=50
+            pt.x(),
+            pt.y(),
+            num_qubits=self._adapter.circuit.num_qubits,
+            num_columns=self._revealed_columns,
         )
         if cell is None:
             if self._drag_cells:
@@ -188,7 +245,10 @@ class CircuitCanvas(QWidget):
         if event.button() == Qt.MouseButton.LeftButton:
             pt = event.position().toPoint()
             cell = self._geo.point_to_cell(
-                pt.x(), pt.y(), num_qubits=self._adapter.circuit.num_qubits, num_columns=50
+                pt.x(),
+                pt.y(),
+                num_qubits=self._adapter.circuit.num_qubits,
+                num_columns=self._revealed_columns,
             )
             ctrl = bool(
                 event.modifiers()
@@ -213,7 +273,10 @@ class CircuitCanvas(QWidget):
         pt = event.position().toPoint()
         if self._controller.is_drag_initiated:
             cell = self._geo.point_to_cell(
-                pt.x(), pt.y(), num_qubits=self._adapter.circuit.num_qubits, num_columns=50
+                pt.x(),
+                pt.y(),
+                num_qubits=self._adapter.circuit.num_qubits,
+                num_columns=self._revealed_columns,
             )
             if cell is not None:
                 self._controller.update_drag_move(cell, (pt.x(), pt.y()))
@@ -226,7 +289,7 @@ class CircuitCanvas(QWidget):
                 self._marquee_pixel_current.x(),
                 self._marquee_pixel_current.y(),
                 num_qubits=self._adapter.circuit.num_qubits,
-                num_columns=50,
+                num_columns=self._revealed_columns,
             )
             if cells:
                 q_min = min(c[0] for c in cells)
@@ -243,7 +306,10 @@ class CircuitCanvas(QWidget):
         if self._controller.is_drag_initiated:
             pt = event.position().toPoint()
             cell = self._geo.point_to_cell(
-                pt.x(), pt.y(), num_qubits=self._adapter.circuit.num_qubits, num_columns=50
+                pt.x(),
+                pt.y(),
+                num_qubits=self._adapter.circuit.num_qubits,
+                num_columns=self._revealed_columns,
             )
             d_q, d_c = self._controller.drag_delta
             action = self._controller.end_drag_move(self._adapter.circuit, cell)
@@ -372,7 +438,7 @@ class CircuitCanvas(QWidget):
 
         total_grid_height = num_qubits * self._geo.cell_height
 
-        for c in range(50):
+        for c in range(self._revealed_columns):
             cx, _ = self._geo.cell_center(0, c)
             # Column number text
             painter.setPen(mid_color)
@@ -387,7 +453,13 @@ class CircuitCanvas(QWidget):
             painter.drawLine(x_line, margins.top, x_line, margins.top + total_grid_height)
 
         # Right boundary grid line
-        x_last = margins.left + 50 * self._geo.cell_width
+        x_last = (
+            self.width()
+            if self._scroll_area is not None
+            and self._revealed_columns
+            <= self._geo.visible_columns(self._scroll_area.viewport().width())
+            else margins.left + self._revealed_columns * self._geo.cell_width
+        )
         painter.setPen(faint_grid_pen)
         painter.drawLine(x_last, margins.top, x_last, margins.top + total_grid_height)
 

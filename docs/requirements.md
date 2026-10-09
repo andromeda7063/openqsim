@@ -616,6 +616,18 @@ leave the complete prior state unchanged.
                           is rejected atomically if it
                           would violate any validation
                           rule.
+
+  FR-1.51                 The canvas shall fill its available viewport width  High
+                          without a horizontal scrollbar when the revealed
+                          grid fits in that width. It shall reveal through
+                          the highest occupied column and one subsequent
+                          empty column, unless the highest occupied column is
+                          49. During an active editing gesture it may
+                          temporarily reveal further columns. It shall never
+                          reveal a placement column beyond 49. After a
+                          gesture ends, it shall remove temporary columns
+                          that are no longer needed by the circuit or
+                          viewport.
   -----------------------------------------------------------------------
 
 ## 7. Validation requirements
@@ -1263,25 +1275,23 @@ The importer shall reject:
                           click/Ctrl/Cmd/marquee selection rules in
                           Section 6.3 consistently.
 
-  NFR-2.7                 The circuit canvas shall provide   High
-                          all qubit wires and all 50
-                          columns and may scroll
-                          horizontally and vertically. At
-                          1920x1080 with the window filling
-                          the screen, the palette, the
-                          scrollable canvas, OpenQASM
-                          editor, and access to the
-                          Bloch-sphere and histogram views
-                          shall all be available in the
-                          same window. Simulation results
-                          shall appear below the workspace with step
-                          controls and the selected-step label after Step Run.
-                          Drag/drop,
-                          selection, paste, and arrow-key
-                          movement shall behave identically
-                          for cells reached by scrolling,
-                          and a moved or pasted selection
-                          shall be scrolled into view.
+  NFR-2.7                 The circuit canvas shall make every wire and every  High
+                          editor column 0..49 reachable for placement,
+                          selection, paste, and movement. It may reveal
+                          columns progressively according to FR-1.51 and
+                          FR-1.55. A horizontal or vertical scrollbar shall
+                          appear only when the corresponding canvas content
+                          exceeds its viewport. At 1920×1080 with the window
+                          filling the screen, the gate palette, canvas,
+                          OpenQASM editor, and access to the Bloch-sphere and
+                          histogram views shall be available in the same
+                          window. Simulation results shall appear below the
+                          workspace with step controls and the selected-step
+                          label after Step Run. Drag/drop, selection, paste,
+                          and arrow-key movement shall behave identically in
+                          cells reached by scrolling. A moved or pasted
+                          selection shall be scrolled into view according to
+                          FR-1.56.
 
   NFR-2.8                 At the reference 1920x1080 layout, Bloch wireframes, Medium
                           axis labels, vector indicators, numeric coordinates,

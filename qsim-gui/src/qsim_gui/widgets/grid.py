@@ -94,3 +94,8 @@ class GridGeometry:
         width = self.margins.left + num_columns * self.cell_width + self.margins.right
         height = self.margins.top + num_qubits * self.cell_height + self.margins.bottom
         return (width, height)
+
+    def visible_columns(self, viewport_width: int) -> int:
+        """Count columns at least partly visible past the left grid margin."""
+        grid_width = max(0, viewport_width - self.margins.left)
+        return min(50, (grid_width + self.cell_width - 1) // self.cell_width)
