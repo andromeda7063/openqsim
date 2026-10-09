@@ -667,6 +667,25 @@ leave the complete prior state unchanged.
                           selection, clipboard, or undo/redo history. On
                           release, the operation shall follow the normal
                           atomic mutation and error rules.
+
+  FR-1.55                 While a palette drag, selected-gate move, or  High
+                          marquee is active, holding the pointer within 24
+                          pixels of a canvas viewport edge for at least 150
+                          ms shall scroll or reveal content in that direction
+                          by one grid cell every 120 ms, while the pointer
+                          remains in that band. Right-edge reveal shall stop
+                          at column 49. Scrolling shall stop when the gesture
+                          ends, is cancelled, or leaves the edge band.
+                          Scrolling alone shall not change circuit or session
+                          state.
+
+  FR-1.56                 After a successful move or paste, the canvas shall  Medium
+                          scroll so the complete resulting selection bounding
+                          rectangle is visible when it fits within the
+                          viewport. When it does not fit, the top-left
+                          occupied cell of the resulting selection shall be
+                          visible and the remaining cells shall be reachable
+                          by scrolling.
   -----------------------------------------------------------------------
 
 ## 7. Validation requirements

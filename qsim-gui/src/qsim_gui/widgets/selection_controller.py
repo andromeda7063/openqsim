@@ -190,6 +190,14 @@ class SelectionController:
         self._marquee_ctrl = False
         self._notify()
 
+    def cancel_marquee(self) -> None:
+        if self._marquee_start is not None:
+            self._marquee_start = None
+            self._marquee_current = None
+            self._marquee_ctrl = False
+            self.set_selection(self._base_selection)
+            self._notify()
+
     # --- Move & Drag interactions ---
 
     def press_cell_for_drag(
@@ -217,6 +225,14 @@ class SelectionController:
         self._drag_start_pixel = pixel_pos
         self._drag_initiated = True
         self._dragging_move = False
+
+    def cancel_drag_move(self) -> None:
+        self._drag_initiated = False
+        self._dragging_move = False
+        self._drag_start_cell = None
+        self._drag_current_cell = None
+        self._drag_start_pixel = None
+        self._notify()
 
     def update_drag_move(
         self,

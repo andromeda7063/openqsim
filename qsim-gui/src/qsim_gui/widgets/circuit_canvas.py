@@ -9,7 +9,7 @@ from libqsim.application.operations import OperationResult, delete_gates, place_
 from libqsim.application.selection import gate_at
 from libqsim.application.session import EditorSession
 from libqsim.domain.models import GatePlacement, GateType
-from PySide6.QtCore import QEvent, QMimeData, QPoint, QPointF, QRectF, QSize, Qt
+from PySide6.QtCore import QEvent, QPoint, QPointF, QRectF, QSize, Qt, QTimer
 from PySide6.QtGui import (
     QColor,
     QContextMenuEvent,
@@ -83,8 +83,19 @@ class CircuitCanvas(QWidget):
         self._marquee_pixel_start: QPoint | None = None
         self._marquee_pixel_current: QPoint | None = None
         self._scroll_area: QScrollArea | None = None
+        self._viewport: QWidget | None = None
         self._revealed_columns = 50
         self._temporary_column = -1
+        self._palette_gate: GateType | None = None
+        self._edge_pointer: QPoint | None = None
+        self._edge_direction = (0, 0)
+        self._edge_gesture = ""
+        self._edge_delay = QTimer(self)
+        self._edge_delay.setSingleShot(True)
+        self._edge_delay.timeout.connect(self._begin_edge_scroll)
+        self._edge_repeat = QTimer(self)
+        self._edge_repeat.setInterval(120)
+        self._edge_repeat.timeout.connect(self._edge_step)
         self.setAcceptDrops(True)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
@@ -145,22 +156,78 @@ class CircuitCanvas(QWidget):
             self._temporary_column = -1
             self._update_dimensions()
 
+    def _stop_edge_scroll(self) -> None:
+        had_cue = self._edge_direction != (0, 0)
+        self._edge_delay.stop()
+        self._edge_repeat.stop()
+        self._edge_direction = (0, 0)
+        self._edge_pointer = None
+        self._edge_gesture = ""
+        if had_cue:
+            self.update()
+
+    def _track_edge(self, pt: QPoint, gesture: str) -> None:
+        if self._scroll_area is None:
+            return
+        viewport = self._scroll_area.viewport()
+        pointer = viewport.mapFromGlobal(self.mapToGlobal(pt))
+        if not viewport.rect().contains(pointer):
+            self._stop_edge_scroll()
+            return
+        dx = -1 if pointer.x() < 24 else 1 if pointer.x() >= viewport.width() - 24 else 0
+        dy = -1 if pointer.y() < 24 else 1 if pointer.y() >= viewport.height() - 24 else 0
+        direction = (dx, dy)
+        if direction == (0, 0):
+            self._stop_edge_scroll()
+            return
+        self._edge_pointer = pointer
+        if direction != self._edge_direction or gesture != self._edge_gesture:
+            self._edge_direction = direction
+            self._edge_gesture = gesture
+            self._edge_repeat.stop()
+            self._edge_delay.start(150)
+            self.update()
+
+    def _begin_edge_scroll(self) -> None:
+        self._edge_step()
+        if self._edge_direction != (0, 0):
+            self._edge_repeat.start()
+
+    def _edge_step(self) -> None:
+        if self._scroll_area is None or self._edge_pointer is None:
+            return
+        dx, dy = self._edge_direction
+        hbar = self._scroll_area.horizontalScrollBar()
+        vbar = self._scroll_area.verticalScrollBar()
+        if dx > 0 and hbar.value() == hbar.maximum() and self._revealed_columns < 50:
+            self.reveal_temporary_column(self._revealed_columns)
+        if dx:
+            hbar.setValue(hbar.value() + dx * self._geo.cell_width)
+        if dy:
+            vbar.setValue(vbar.value() + dy * self._geo.cell_height)
+        pt = self.mapFromGlobal(self._scroll_area.viewport().mapToGlobal(self._edge_pointer))
+        if self._edge_gesture == "palette" and self._palette_gate is not None:
+            self._update_drag_highlight(pt, self._palette_gate)
+        elif self._edge_gesture in ("move", "marquee"):
+            self._update_mouse_gesture(pt)
+
     def showEvent(self, event) -> None:  # type: ignore[no-untyped-def]
         super().showEvent(event)
         parent = self.parentWidget()
         if parent is not None and isinstance(parent.parentWidget(), QScrollArea):
             area = parent.parentWidget()
             if area is not self._scroll_area:
-                if self._scroll_area is not None:
-                    self._scroll_area.viewport().removeEventFilter(self)
+                if self._viewport is not None:
+                    self._viewport.removeEventFilter(self)
                 self._scroll_area = area
-                area.viewport().installEventFilter(self)
+                self._viewport = area.viewport()
+                self._viewport.installEventFilter(self)
             self._update_dimensions()
 
     def eventFilter(self, watched, event) -> bool:  # type: ignore[no-untyped-def]
         if (
             getattr(self, "_scroll_area", None) is not None
-            and watched is self._scroll_area.viewport()
+            and watched is getattr(self, "_viewport", None)
             and event.type() == QEvent.Type.Resize
         ):
             self._update_dimensions()
@@ -191,16 +258,26 @@ class CircuitCanvas(QWidget):
         self.update()
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
-        if decode_gate_mime(event.mimeData()) is not None:
+        gate = decode_gate_mime(event.mimeData())
+        if gate is not None:
+            self._palette_gate = gate
             event.acceptProposedAction()
-            self._update_drag_highlight(event.position().toPoint(), event.mimeData())
+            pt = event.position().toPoint()
+            self._update_drag_highlight(pt, gate)
+            self._track_edge(pt, "palette")
 
     def dragMoveEvent(self, event: QDragMoveEvent) -> None:
-        if decode_gate_mime(event.mimeData()) is not None:
+        gate = decode_gate_mime(event.mimeData())
+        if gate is not None:
+            self._palette_gate = gate
             event.acceptProposedAction()
-            self._update_drag_highlight(event.position().toPoint(), event.mimeData())
+            pt = event.position().toPoint()
+            self._update_drag_highlight(pt, gate)
+            self._track_edge(pt, "palette")
 
     def dragLeaveEvent(self, event: QDragLeaveEvent) -> None:
+        self._stop_edge_scroll()
+        self._palette_gate = None
         self._clear_temporary_columns()
         self._drag_feedback = None
         if self._drag_cells or self._drag_preview is not None:
@@ -210,6 +287,16 @@ class CircuitCanvas(QWidget):
         event.accept()
 
     def dropEvent(self, event: QDropEvent) -> None:
+        pt = event.position().toPoint()
+        inside_widget = self.rect().contains(pt)
+        cell = self._geo.point_to_cell(
+            pt.x(),
+            pt.y(),
+            num_qubits=self._adapter.circuit.num_qubits,
+            num_columns=self._revealed_columns,
+        )
+        self._stop_edge_scroll()
+        self._palette_gate = None
         self._clear_temporary_columns()
         self._drag_feedback = None
         if self._drag_cells or self._drag_preview is not None:
@@ -222,15 +309,8 @@ class CircuitCanvas(QWidget):
             event.ignore()
             return
 
-        pt = event.position().toPoint()
-        cell = self._geo.point_to_cell(
-            pt.x(),
-            pt.y(),
-            num_qubits=self._adapter.circuit.num_qubits,
-            num_columns=self._revealed_columns,
-        )
         if cell is None:
-            if self.rect().contains(pt) and self._ui is not None:
+            if inside_widget and self._ui is not None:
                 self._ui.show_error("Placement Error", "Placement is outside the circuit grid.")
                 event.acceptProposedAction()
             else:
@@ -242,7 +322,7 @@ class CircuitCanvas(QWidget):
             self._ui.show_error("Placement Error", "\n".join(res.messages))
         event.acceptProposedAction()
 
-    def _update_drag_highlight(self, pt: QPoint, mime_data: QMimeData) -> None:
+    def _update_drag_highlight(self, pt: QPoint, gate_type: GateType) -> None:
         cell = self._geo.point_to_cell(
             pt.x(),
             pt.y(),
@@ -259,9 +339,6 @@ class CircuitCanvas(QWidget):
             self.update()
             return
 
-        gate_type = decode_gate_mime(mime_data)
-        if gate_type is None:
-            return
         q, c = cell
         if gate_type == GateType.CNOT:
             cells = [(q, c), (q + 1, c)]
@@ -291,14 +368,26 @@ class CircuitCanvas(QWidget):
         min_c, max_c = min(all_cols), max(all_cols)
         x0, y0, _, _ = self._geo.cell_to_rect(min_q, min_c)
         x1, y1, w, h = self._geo.cell_to_rect(max_q, max_c)
-        cx = (x0 + x1 + w) // 2
-        cy = (y0 + y1 + h) // 2
-        parent = self.parentWidget()
-        while parent is not None:
-            if hasattr(parent, "ensureVisible"):
-                parent.ensureVisible(cx, cy, 50, 50)
-                break
-            parent = parent.parentWidget()
+        if self._scroll_area is None:
+            return
+        viewport = self._scroll_area.viewport()
+        hbar = self._scroll_area.horizontalScrollBar()
+        vbar = self._scroll_area.verticalScrollBar()
+        right, bottom = x1 + w, y1 + h
+        if right - x0 <= viewport.width():
+            if x0 < hbar.value():
+                hbar.setValue(x0)
+            elif right > hbar.value() + viewport.width():
+                hbar.setValue(right - viewport.width())
+        else:
+            hbar.setValue(x0)
+        if bottom - y0 <= viewport.height():
+            if y0 < vbar.value():
+                vbar.setValue(y0)
+            elif bottom > vbar.value() + viewport.height():
+                vbar.setValue(bottom - viewport.height())
+        else:
+            vbar.setValue(y0)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         self.setFocus()
@@ -331,6 +420,16 @@ class CircuitCanvas(QWidget):
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         pt = event.position().toPoint()
+        self._update_mouse_gesture(pt)
+        if self._controller.is_drag_initiated:
+            self._track_edge(pt, "move")
+        elif self._controller.is_marquee_active:
+            self._track_edge(pt, "marquee")
+        else:
+            self._stop_edge_scroll()
+        super().mouseMoveEvent(event)
+
+    def _update_mouse_gesture(self, pt: QPoint) -> None:
         if self._controller.is_drag_initiated:
             cell = self._geo.point_to_cell(
                 pt.x(),
@@ -368,9 +467,9 @@ class CircuitCanvas(QWidget):
                     self._adapter.circuit, q_min, q_max, c_min, c_max
                 )
             self.update()
-        super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        self._stop_edge_scroll()
         if self._controller.is_drag_initiated:
             pt = event.position().toPoint()
             cell = self._geo.point_to_cell(
@@ -382,6 +481,7 @@ class CircuitCanvas(QWidget):
             d_q, d_c = self._controller.drag_delta
             action = self._controller.end_drag_move(self._adapter.circuit, cell)
             self._move_feedback = None
+            self._clear_temporary_columns()
             if not self.rect().contains(pt):
                 self.update()
                 return
@@ -401,10 +501,24 @@ class CircuitCanvas(QWidget):
             self._controller.marquee_end(self._adapter.circuit)
             self._marquee_pixel_start = None
             self._marquee_pixel_current = None
+            self._clear_temporary_columns()
             self.update()
         super().mouseReleaseEvent(event)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() == Qt.Key.Key_Escape and (
+            self._controller.is_drag_initiated or self._controller.is_marquee_active
+        ):
+            self._stop_edge_scroll()
+            self._clear_temporary_columns()
+            self._controller.cancel_drag_move()
+            self._controller.cancel_marquee()
+            self._marquee_pixel_start = None
+            self._marquee_pixel_current = None
+            self._move_feedback = None
+            self.update()
+            event.accept()
+            return
         if event.key() in (Qt.Key.Key_Delete, Qt.Key.Key_Backspace):
             if self._controller.selection:
                 res = delete_gates(self._adapter.circuit, self._controller.selection)
@@ -658,6 +772,19 @@ class CircuitCanvas(QWidget):
                     _, b_hy, _, b_hh = self._geo.cell_to_rect(max_q, tgt_col)
                     total_h = (b_hy + b_hh) - hy
                     painter.drawRoundedRect(QRectF(hx + 3, hy + 3, hw - 6, total_h - 6), 5, 5)
+
+        # Edge cues stay in the header and label margins, clear of gate symbols.
+        if self._scroll_area is not None and self._edge_pointer is not None:
+            viewport = self._scroll_area.viewport()
+            origin = self.mapFromGlobal(viewport.mapToGlobal(QPoint(0, 0)))
+            dx, dy = self._edge_direction
+            painter.setPen(QPen(pal.color(QPalette.ColorRole.Highlight), 3.0))
+            if dx:
+                x = origin.x() + (viewport.width() - 3 if dx > 0 else 3)
+                painter.drawLine(x, origin.y() + 2, x, origin.y() + 12)
+            if dy:
+                y = origin.y() + (viewport.height() - 3 if dy > 0 else 3)
+                painter.drawLine(origin.x() + 2, y, origin.x() + 12, y)
 
     def _draw_gate(
         self,

@@ -253,6 +253,7 @@ class MainWindow(QMainWindow):
         )
         self._canvas.setObjectName("circuit_canvas")
         self._commands.set_selection_controller(self._canvas.selection_controller)
+        self._commands.on_paste_applied = self._canvas.scroll_selection_into_view
 
         self._canvas_scroll = QScrollArea(self)
         self._canvas_scroll.setObjectName("canvas_region")
