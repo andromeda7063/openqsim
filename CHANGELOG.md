@@ -1,9 +1,8 @@
 # Changelog
 
-## v1.1 (in development — temporary)
+## v1.1 (in development)
 
-Changes on `v1.1-dev` relative to `dev` (v1.0). This entry covers the eight
-commits made on 2026-10-09 and will be revised before release.
+Changes on `v1.1/dev` relative to `dev` (v1.0).
 
 ### Circuit workspace
 
@@ -16,6 +15,13 @@ commits made on 2026-10-09 and will be revised before release.
   selected theme is restored on launch.
 - Replaced the main toolbar's text buttons with bundled Lucide icons, retaining
   action names in menus and accessible names and tooltips on the controls.
+- Expanded the canvas to keep all 50 editor columns reachable as gates are
+  placed, and added scrolling that follows active drag gestures and edited
+  selections.
+- Added palette drag ghosts, gate role previews, and candidate validity
+  feedback; drops in the canvas margin are rejected.
+- Preserved selection while revealing pasted gates and added coverage for
+  canvas state transitions, edge scrolling, and viewport geometry.
 
 ### Circuits and simulation
 
