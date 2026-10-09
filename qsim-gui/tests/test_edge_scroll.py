@@ -174,6 +174,19 @@ def test_vertical_edge_scroll_and_move_cancellation(qapp: QApplication) -> None:
     canvas._begin_edge_scroll()
     assert area.verticalScrollBar().value() > 0
     assert canvas.selection_controller.drag_current_cell is not None
+    right = canvas.mapFrom(viewport, QPoint(viewport.width() - 2, 84))
+    canvas.mouseMoveEvent(
+        QMouseEvent(
+            QMouseEvent.Type.MouseMove,
+            QPointF(right),
+            QPointF(right),
+            Qt.MouseButton.NoButton,
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+    )
+    canvas._begin_edge_scroll()
+    assert area.horizontalScrollBar().value() > 0
     escape = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_Escape, Qt.KeyboardModifier.NoModifier)
     canvas.keyPressEvent(escape)
     assert not canvas._edge_repeat.isActive()
@@ -211,6 +224,19 @@ def test_marquee_tracks_cells_as_viewport_scrolls(qapp: QApplication) -> None:
     canvas._begin_edge_scroll()
     assert area.verticalScrollBar().value() > 0
     assert session.circuit.placements[0] in canvas.selection_controller.selection
+    right = canvas.mapFrom(viewport, QPoint(viewport.width() - 2, 84))
+    canvas.mouseMoveEvent(
+        QMouseEvent(
+            QMouseEvent.Type.MouseMove,
+            QPointF(right),
+            QPointF(right),
+            Qt.MouseButton.NoButton,
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+    )
+    canvas._begin_edge_scroll()
+    assert area.horizontalScrollBar().value() > 0
     canvas.keyPressEvent(
         QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_Escape, Qt.KeyboardModifier.NoModifier)
     )

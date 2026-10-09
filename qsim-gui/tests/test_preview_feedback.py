@@ -1,7 +1,7 @@
 """Candidate feedback agrees with headless operations without editing the session."""
 
 import pytest
-from libqsim.application.operations import place_gate
+from libqsim.application.operations import move_gates, place_gate
 from libqsim.application.session import EditorSession
 from libqsim.domain.models import GateType
 from PySide6.QtCore import QPoint, QPointF, Qt
@@ -118,6 +118,80 @@ def test_move_feedback_and_invalid_release(qapp: QApplication) -> None:
     assert len(ui.errors) == 1
     assert session.circuit == before[0]
     assert canvas.selection_controller.selection == frozenset({gate})
+
+
+@pytest.mark.req("FR-1.54")
+def test_measurement_and_vacated_cell_preview(qapp: QApplication) -> None:
+    session = EditorSession()
+    adapter = SessionAdapter(session)
+    adapter.apply(place_gate(session.circuit, GateType.Measurement, 1, 2))
+    canvas = CircuitCanvas(adapter)
+    _hover(canvas, GateType.H, 1, 3)
+    assert canvas.preview_feedback is not None
+    assert canvas.preview_feedback.status == "rejected"
+    assert "Measurement" in canvas.preview_feedback.reason
+
+    session.new()
+    adapter.apply(place_gate(session.circuit, GateType.H, 0, 0))
+    adapter.apply(place_gate(session.circuit, GateType.X, 0, 1))
+    selected = frozenset(session.circuit.placements)
+    canvas.selection_controller.set_selection(selected)
+    canvas.selection_controller.start_drag_move((0, 0), (84, 64))
+    cx, cy = canvas.grid_geometry.cell_center(0, 1)
+    event = QMouseEvent(
+        QMouseEvent.Type.MouseMove,
+        QPointF(cx, cy),
+        QPointF(cx, cy),
+        Qt.MouseButton.NoButton,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    canvas.mouseMoveEvent(event)
+    expected = move_gates(session.circuit, selected, 0, 1)
+    assert expected.status == "applied"
+    assert canvas.preview_feedback is not None
+    assert canvas.preview_feedback.status == expected.status
+    assert canvas.selection_controller.selection == selected
+    canvas.selection_controller.cancel_drag_move()
+
+
+@pytest.mark.req("FR-1.54")
+def test_valid_move_release_commits_once(qapp: QApplication) -> None:
+    session = EditorSession()
+    adapter = SessionAdapter(session)
+    adapter.apply(place_gate(session.circuit, GateType.H, 0, 0))
+    canvas = CircuitCanvas(adapter)
+    gate = session.circuit.placements[0]
+    canvas.selection_controller.set_selection({gate})
+    canvas.selection_controller.start_drag_move((0, 0), (84, 64))
+    cx, cy = canvas.grid_geometry.cell_center(0, 1)
+    canvas.mouseMoveEvent(
+        QMouseEvent(
+            QMouseEvent.Type.MouseMove,
+            QPointF(cx, cy),
+            QPointF(cx, cy),
+            Qt.MouseButton.NoButton,
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+    )
+    assert canvas.preview_feedback is not None
+    assert canvas.preview_feedback.status == "applied"
+    canvas.mouseReleaseEvent(
+        QMouseEvent(
+            QMouseEvent.Type.MouseButtonRelease,
+            QPointF(cx, cy),
+            QPointF(cx, cy),
+            Qt.MouseButton.LeftButton,
+            Qt.MouseButton.NoButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+    )
+    assert session.circuit.placements[0].column == 1
+    assert session.undo()
+    assert session.circuit.placements[0].column == 0
+    assert session.undo()
+    assert session.circuit.placements == ()
 
 
 @pytest.mark.req("FR-1.5", "FR-1.54")

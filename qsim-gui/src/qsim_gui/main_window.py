@@ -413,7 +413,7 @@ class MainWindow(QMainWindow):
             event.accept()
 
     def export_circuit_image(self, path: Path | str | None = None) -> bool:
-        """Export the full 50-column circuit canvas as a PNG image."""
+        """Export the currently revealed circuit canvas as a PNG image."""
         if path is None:
             chosen = self._ui.choose_save_file(
                 "Export Circuit Diagram",
@@ -426,7 +426,6 @@ class MainWindow(QMainWindow):
         target = Path(path)
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
-            # Full 50-column canvas size
             canvas_size = self._canvas.size()
             image = QImage(canvas_size, QImage.Format.Format_ARGB32)
             image.fill(Qt.GlobalColor.white)
