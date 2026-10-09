@@ -98,6 +98,21 @@ class CircuitCanvas(QWidget):
     def drag_preview(self) -> GatePlacement | None:
         return self._drag_preview
 
+    @property
+    def move_preview(self) -> tuple[GatePlacement, ...]:
+        if not self._controller.is_dragging_move:
+            return ()
+        d_q, d_c = self._controller.drag_delta
+        return tuple(
+            GatePlacement(
+                p.gate_type,
+                (q + d_q for q in p.targets),
+                (q + d_q for q in p.controls),
+                p.column + d_c,
+            )
+            for p in self._controller.selection
+        )
+
     def reveal_temporary_column(self, column: int) -> None:
         """Extend the active gesture's visible grid without editing the circuit."""
         column = min(49, column)
@@ -515,31 +530,22 @@ class CircuitCanvas(QWidget):
         circuit = self._adapter.circuit
         for p in circuit.placements:
             is_selected = p in self._controller.selection
-            if p.gate_type in (GateType.CNOT, GateType.Toffoli):
-                self._draw_multi_qubit_gate(
-                    painter, p, window_text, box_bg, is_selected=is_selected
-                )
-            elif p.gate_type == GateType.Measurement:
-                self._draw_measurement(
-                    painter, p.targets[0], p.column, window_text, box_bg, is_selected=is_selected
-                )
-            else:
-                self._draw_single_qubit_gate(
-                    painter, p, window_text, box_bg, is_selected=is_selected
-                )
+            self._draw_gate(painter, p, window_text, box_bg, is_selected)
 
         if self._drag_preview is not None:
             painter.save()
             painter.setOpacity(0.7)
-            preview = self._drag_preview
-            if preview.gate_type in (GateType.CNOT, GateType.Toffoli):
-                self._draw_multi_qubit_gate(painter, preview, window_text, box_bg)
-            elif preview.gate_type == GateType.Measurement:
-                self._draw_measurement(
-                    painter, preview.targets[0], preview.column, window_text, box_bg
-                )
-            else:
-                self._draw_single_qubit_gate(painter, preview, window_text, box_bg)
+            self._draw_gate(painter, self._drag_preview, window_text, box_bg)
+            painter.restore()
+
+        if self.move_preview:
+            painter.save()
+            painter.setOpacity(0.7)
+            for preview in self.move_preview:
+                if 0 <= preview.column < 50 and all(
+                    0 <= q < num_qubits for q in preview.occupied_qubits
+                ):
+                    self._draw_gate(painter, preview, window_text, box_bg)
             painter.restore()
 
         # 4. Draw marquee rectangle if active
@@ -578,6 +584,32 @@ class CircuitCanvas(QWidget):
                         _, b_hy, _, b_hh = self._geo.cell_to_rect(max_q, tgt_col)
                         total_h = (b_hy + b_hh) - hy
                         painter.drawRoundedRect(QRectF(hx + 3, hy + 3, hw - 6, total_h - 6), 5, 5)
+
+    def _draw_gate(
+        self,
+        painter: QPainter,
+        placement: GatePlacement,
+        text_color: QColor,
+        box_bg: QColor,
+        is_selected: bool = False,
+    ) -> None:
+        if placement.gate_type in (GateType.CNOT, GateType.Toffoli):
+            self._draw_multi_qubit_gate(
+                painter, placement, text_color, box_bg, is_selected=is_selected
+            )
+        elif placement.gate_type == GateType.Measurement:
+            self._draw_measurement(
+                painter,
+                placement.targets[0],
+                placement.column,
+                text_color,
+                box_bg,
+                is_selected=is_selected,
+            )
+        else:
+            self._draw_single_qubit_gate(
+                painter, placement, text_color, box_bg, is_selected=is_selected
+            )
 
     def _draw_single_qubit_gate(
         self,

@@ -639,6 +639,16 @@ leave the complete prior state unchanged.
                           canvas, or is cancelled. Drawing a ghost shall not
                           change the circuit, statuses, selection, or
                           undo/redo history.
+
+  FR-1.53                 A CNOT or Toffoli preview shall display a filled  High
+                          control dot at every proposed control wire and a
+                          circled-plus at the proposed target wire. A new
+                          palette drop shall preview the default control and
+                          target arrangement defined by FR-1.49. A move
+                          preview of an existing gate shall preserve and
+                          display that gate’s current control and target
+                          roles. The committed gate shall have exactly the
+                          roles shown immediately before a valid release.
   -----------------------------------------------------------------------
 
 ## 7. Validation requirements
