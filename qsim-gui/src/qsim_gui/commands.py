@@ -12,6 +12,7 @@ from libqsim.application.operations import (
     paste,
 )
 from libqsim.application.session import SaveStatus
+from libqsim.domain.models import GatePlacement
 from libqsim.examples import CircuitExample
 from libqsim.qasm.importer import QasmError, import_text
 from PySide6.QtGui import QAction, QKeySequence
@@ -37,7 +38,7 @@ class CommandActions:
         self._ui = ui
         self._selection_controller: SelectionController | None = None
         self._clipboard: Clipboard | None = None
-        self.on_paste_applied: Callable[[], None] | None = None
+        self.on_paste_applied: Callable[[tuple[GatePlacement, ...]], None] | None = None
 
         # Callbacks for image export
         self.on_export_circuit_image: Callable[[Path | str | None], bool] | None = None
@@ -213,10 +214,8 @@ class CommandActions:
         )
         if res.status == "applied":
             self._adapter.apply(res)
-            if self._selection_controller is not None:
-                self._selection_controller.follow_move(res)
             if self.on_paste_applied is not None:
-                self.on_paste_applied()
+                self.on_paste_applied(res.touched)
         elif res.status == "rejected":
             self._ui.show_error("Paste Error", "\n".join(res.messages))
 

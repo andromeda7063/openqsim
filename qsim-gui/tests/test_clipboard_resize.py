@@ -105,8 +105,8 @@ def test_paste_at_anchor_and_relative_geometry(qapp: QApplication) -> None:
     )
     assert pasted_x.targets == (3,)
 
-    # Paste selects the resulting gates so the canvas can reveal their bounds.
-    assert ctrl.selection == frozenset({pasted_cnot, pasted_x})
+    # Paste does NOT change selection
+    assert ctrl.selection == frozenset()
 
 
 @pytest.mark.req("FR-1.48")

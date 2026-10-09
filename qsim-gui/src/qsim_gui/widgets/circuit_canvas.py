@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -360,10 +361,15 @@ class CircuitCanvas(QWidget):
 
     def scroll_selection_into_view(self) -> None:
         """Scroll the scroll area so the current selection is visible."""
-        if not self._controller.selection:
+        self.scroll_placements_into_view(self._controller.selection)
+
+    def scroll_placements_into_view(self, placements: Iterable[GatePlacement]) -> None:
+        """Scroll to the complete placement bounds, or their top-left cell."""
+        placements = tuple(placements)
+        if not placements:
             return
-        all_qubits = [q for p in self._controller.selection for q in p.occupied_qubits]
-        all_cols = [p.column for p in self._controller.selection]
+        all_qubits = [q for p in placements for q in p.occupied_qubits]
+        all_cols = [p.column for p in placements]
         min_q, max_q = min(all_qubits), max(all_qubits)
         min_c, max_c = min(all_cols), max(all_cols)
         x0, y0, _, _ = self._geo.cell_to_rect(min_q, min_c)

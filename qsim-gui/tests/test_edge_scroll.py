@@ -244,7 +244,7 @@ def test_marquee_tracks_cells_as_viewport_scrolls(qapp: QApplication) -> None:
 
 
 @pytest.mark.req("FR-1.56")
-def test_paste_selects_and_reveals_result(qapp: QApplication) -> None:
+def test_paste_reveals_result_without_changing_selection(qapp: QApplication) -> None:
     session = EditorSession()
     adapter = SessionAdapter(session)
     adapter.apply(place_gate(session.circuit, GateType.X, 0, 0))
@@ -252,14 +252,13 @@ def test_paste_selects_and_reveals_result(qapp: QApplication) -> None:
     commands = CommandActions(
         QWidget(), adapter, StubUserInterface(), selection_controller=canvas.selection_controller
     )
-    commands.on_paste_applied = canvas.scroll_selection_into_view
+    commands.on_paste_applied = canvas.scroll_placements_into_view
     canvas.selection_controller.set_selection(session.circuit.placements)
     commands.action_copy.trigger()
     canvas.selection_controller.click_empty((0, 30))
     commands.action_paste.trigger()
-    selection = canvas.selection_controller.selection
-    assert len(selection) == 1
-    pasted = next(iter(selection))
+    assert canvas.selection_controller.selection == frozenset()
+    pasted = next(p for p in session.circuit.placements if p.column == 30)
     assert pasted.column == 30
     x, _, w, _ = canvas.grid_geometry.cell_to_rect(0, 30)
     scroll = area.horizontalScrollBar().value()
